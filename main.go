@@ -9,6 +9,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 type OpenAIMessage struct {
@@ -27,6 +29,24 @@ type OpenAIResp struct {
 }
 
 func main() {
+	// the server which will accept requests from the frontend
+	app := fiber.New(fiber.Config{
+		Prefork:      true,
+		ServerHeader: "Fiber",
+	})
+
+	app.Get("/api/openai/:message", func(ctx *fiber.Ctx) error {
+		messsage := ctx.Params("message")
+		_ = messsage
+
+		// TOOD: Make request to the OpenAI api server
+		return nil
+	})
+
+	// if err := app.Listen(":3031"); err != nil {
+	// 	// TODO: Handle error later
+	// }
+
 	OPENAI_API_KEY, set := os.LookupEnv("OPENAI_API_KEY")
 	if set == false || OPENAI_API_KEY == "" {
 		log.Fatal("OPENAI_API_KEY is not set")
