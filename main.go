@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -31,6 +32,10 @@ func main() {
 		log.Fatal("OPENAI_API_KEY is not set")
 	}
 
+	openAIQuestion := flag.String("message", "Hello!", "Your question to OpenAI")
+
+	flag.Parse()
+
 	client := &http.Client{}
 
 	messages := []map[string]string{
@@ -40,7 +45,7 @@ func main() {
 		},
 		{
 			"role":    "user",
-			"content": "Please, generate simple Golang programm.",
+			"content": *openAIQuestion,
 		},
 	}
 
