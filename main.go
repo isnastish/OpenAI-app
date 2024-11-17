@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -28,36 +27,28 @@ type OpenAIResp struct {
 	Choices []OpenAIChoiceEntry `json:"choices"`
 }
 
-func main() {
-	// the server which will accept requests from the frontend
-	app := fiber.New(fiber.Config{
-		Prefork:      true,
-		ServerHeader: "Fiber",
-	})
+type FrontendRequestBody struct {
+	OpenaiQuestion string `json:"openai-question"`
+}
 
-	app.Get("/api/openai/:message", func(ctx *fiber.Ctx) error {
-		messsage := ctx.Params("message")
-		_ = messsage
+type OpenAIClient struct {
+	OpenAIAPIKey string
+	*http.Client
+}
 
-		// TOOD: Make request to the OpenAI api server
-		return nil
-	})
-
-	// if err := app.Listen(":3031"); err != nil {
-	// 	// TODO: Handle error later
-	// }
-
+func NewOpenAIClient() (*OpenAIClient, error) {
 	OPENAI_API_KEY, set := os.LookupEnv("OPENAI_API_KEY")
 	if set == false || OPENAI_API_KEY == "" {
-		log.Fatal("OPENAI_API_KEY is not set")
+		return nil, fmt.Errorf("OPENAI_API_KEY is not set")
 	}
 
-	openAIQuestion := flag.String("message", "Hello!", "Your question to OpenAI")
+	return &OpenAIClient{
+		OpenAIAPIKey: OPENAI_API_KEY,
+		Client:       &http.Client{},
+	}, nil
+}
 
-	flag.Parse()
-
-	client := &http.Client{}
-
+func (c *OpenAIClient) AskOpenAI(message string) (*OpenAIResp, error) {
 	messages := []map[string]string{
 		{
 			"role":    "system",
@@ -65,51 +56,110 @@ func main() {
 		},
 		{
 			"role":    "user",
-			"content": *openAIQuestion,
+			"content": message,
 		},
 	}
 
-	data := map[string]interface{}{
+	reqData := map[string]interface{}{
 		"model":    "gpt-4o-mini-2024-07-18",
 		"messages": messages,
 	}
 
-	body, err := json.Marshal(data)
+	body, err := json.Marshal(reqData)
 	if err != nil {
-		log.Fatalf("Failed to marshal the body: %s", err)
+		return nil, fmt.Errorf("Failed to marshal request body: %v", err)
 	}
+
 	req, err := http.NewRequest("POST", "https://api.openai.com/v1/chat/completions", bytes.NewBuffer(body))
 	if err != nil {
-		log.Fatalf("Failed to create a request: %s", err)
+		return nil, fmt.Errorf("Failed to create a request: %v", err)
 	}
 
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", OPENAI_API_KEY))
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", c.OpenAIAPIKey))
 
-	resp, err := client.Do(req)
+	resp, err := c.Do(req)
 	if err != nil {
-		log.Fatalf("Failed to make a request: %s", err)
+		return nil, fmt.Errorf("Failed to make request: %v", err)
 	}
-
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		log.Fatalf("Response status code: %d, message: %s", resp.StatusCode, resp.Status)
-	}
+	// TODO: Read API documentation for possible error codes
+	// if resp.StatusCode != http.StatusOK {
+	// 	// log.Fatalf("Response status code: %d, message: %s", resp.StatusCode, resp.Status)
+	// }
 
 	respBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatalf("Faild to read response body: %s", err)
+		return nil, fmt.Errorf("Failed to read the response body: %v", err)
 	}
 
 	var openAIResp OpenAIResp
 	err = json.Unmarshal(respBytes, &openAIResp)
 	if err != nil {
-		log.Fatalf("Failed to parse response body: %s", err)
+		return nil, fmt.Errorf("Failed to unmarshal the response body: %v", err)
 	}
 
-	fmt.Printf("Model: %s\n", openAIResp.Model)
-	fmt.Printf("Choices: %v\n", openAIResp.Choices[0].Message.Content)
+	return &openAIResp, nil
+}
+
+func main() {
+	openaiClient, _ := NewOpenAIClient() // omit error for now
+
+	// the server which will accept requests from the frontend
+	app := fiber.New(fiber.Config{
+		Prefork:      true,
+		ServerHeader: "Fiber",
+	})
+
+	// CORS middleware
+	app.Use("/", func(ctx *fiber.Ctx) error {
+		fmt.Println("Middleware function was triggered")
+
+		ctx.Set("Access-Control-Allow-Origin", "*")
+
+		if ctx.Method() == "OPTIONS" {
+			// NOTE: Without this header none of PUT/POST requests would work
+			ctx.Set("Access-Control-Allow-Credentials", "true")
+			ctx.Set("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,PATCH,OPTIONS")
+			ctx.Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+			return nil
+		}
+
+		return ctx.Next()
+	})
+
+	app.Put("/api/openai/:message", func(ctx *fiber.Ctx) error {
+		messsage := ctx.Params("message")
+		fmt.Printf("Got a message: %s\n", messsage)
+
+		reqBody := ctx.Request().Body()
+
+		var reqData FrontendRequestBody
+		if err := json.Unmarshal(reqBody, &reqData); err != nil {
+			return fiber.NewError(fiber.StatusBadRequest, "Failed to unmarshal request body")
+		}
+
+		fmt.Printf("Openai question: %s\n", reqData.OpenaiQuestion)
+
+		resp, err := openaiClient.AskOpenAI(reqData.OpenaiQuestion)
+		if err != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("openai: %s", err.Error()))
+		}
+
+		// The json will be returned to our frontend based on React
+		// probably include status, message, API version
+		return ctx.JSON(map[string]string{
+			"model":  resp.Model,
+			"openai": resp.Choices[0].Message.Content,
+		}, "application/json")
+	})
+
+	// TODO: Put into a separate Go routine
+	if err := app.Listen(":3031"); err != nil {
+		log.Fatalf("Server failed %v", err)
+	}
 
 	os.Exit(0)
 }
