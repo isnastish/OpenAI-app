@@ -12,6 +12,8 @@ import (
 	"syscall"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v5"
+	_ "github.com/golang-jwt/jwt/v5"
 )
 
 // TODO: Create openai package and move all the structs there
@@ -49,6 +51,12 @@ func NewOpenAIClient() (*OpenAIClient, error) {
 		OpenAIAPIKey: OPENAI_API_KEY,
 		Client:       &http.Client{},
 	}, nil
+}
+
+// /////////////////////////////////////////////////////////////////
+// JWT Auth
+type Claims struct {
+	jwt.RegisteredClaims
 }
 
 func (c *OpenAIClient) AskOpenAI(message string) (*OpenAIResp, error) {
@@ -157,6 +165,14 @@ func main() {
 			"model":  resp.Model,
 			"openai": resp.Choices[0].Message.Content,
 		}, "application/json")
+	})
+
+	app.Post("/api/login", func(ctx *fiber.Ctx) error {
+		return fiber.NewError(fiber.StatusUnauthorized)
+	})
+
+	app.Post("/api/signup", func(ctx *fiber.Ctx) error {
+		return fiber.NewError(fiber.StatusNotImplemented, "")
 	})
 
 	osSigChan := make(chan os.Signal, 1)
