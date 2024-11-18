@@ -8,10 +8,13 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/gofiber/fiber/v2"
 )
 
+// TODO: Create openai package and move all the structs there
 type OpenAIMessage struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
@@ -156,9 +159,18 @@ func main() {
 		}, "application/json")
 	})
 
-	// TODO: Put into a separate Go routine
-	if err := app.Listen(":3031"); err != nil {
-		log.Fatalf("Server failed %v", err)
+	osSigChan := make(chan os.Signal, 1)
+	signal.Notify(osSigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		if err := app.Listen(":3031"); err != nil {
+			log.Fatalf("Server failed %v", err)
+		}
+	}()
+
+	<-osSigChan
+	if err := app.Shutdown(); err != nil {
+		log.Fatalf("Failed to shutdown the server: %v", err)
 	}
 
 	os.Exit(0)
