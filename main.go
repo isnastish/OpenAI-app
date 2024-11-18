@@ -12,6 +12,8 @@ import (
 	"syscall"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v5"
+	_ "github.com/golang-jwt/jwt/v5"
 )
 
 // TODO: Create openai package and move all the structs there
@@ -49,6 +51,17 @@ func NewOpenAIClient() (*OpenAIClient, error) {
 		OpenAIAPIKey: OPENAI_API_KEY,
 		Client:       &http.Client{},
 	}, nil
+}
+
+type UserData struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+// /////////////////////////////////////////////////////////////////
+// JWT Auth
+type Claims struct {
+	jwt.RegisteredClaims
 }
 
 func (c *OpenAIClient) AskOpenAI(message string) (*OpenAIResp, error) {
@@ -157,6 +170,32 @@ func main() {
 			"model":  resp.Model,
 			"openai": resp.Choices[0].Message.Content,
 		}, "application/json")
+	})
+
+	app.Post("/api/login", func(ctx *fiber.Ctx) error {
+		var userData UserData
+		if err := json.Unmarshal(ctx.Body(), &userData); err != nil {
+			return fiber.NewError(fiber.StatusBadRequest, "Failed to unmarshal request body")
+		}
+
+		// TODO: Email and password validation
+		// TODO: Make a look up into a database and make sure that email and password match
+		// If the user already exists, we have to return error as well
+		fmt.Printf("Email: %s\nPassword: %s\n", userData.Email, userData.Password)
+
+		return ctx.JSON(map[string]string{
+			"token": "DUMMY_SIGNED_JWT_TOKEN",
+		}, "application/json")
+	})
+
+	app.Post("/api/signup", func(ctx *fiber.Ctx) error {
+		var userData UserData
+		if err := json.Unmarshal(ctx.Body(), &userData); err != nil {
+			return fiber.NewError(fiber.StatusBadRequest, "Failed to unmarshal request body")
+		}
+
+		// TODO: Make sure that the user doesn't exist
+		return fiber.NewError(fiber.StatusNotImplemented, "")
 	})
 
 	osSigChan := make(chan os.Signal, 1)
