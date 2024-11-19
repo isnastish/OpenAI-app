@@ -230,15 +230,19 @@ func main() {
 			return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("Failed to sign access token: %v", err))
 		}
 
+		refreshTokenExpiry := time.Hour * 24
+
 		// TODO: We should pass an expiration time as well.
 		// Create refresh token with claims
 		refreshToken := jwt.NewWithClaims(
 			jwt.SigningMethodHS256,
 			&Claims{
 				RegisteredClaims: jwt.RegisteredClaims{
-					Subject:   "somebody", // supposed to be user ID?
-					IssuedAt:  jwt.NewNumericDate(time.Now()),
-					ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 45)),
+					Subject:  "somebody", // supposed to be user ID?
+					IssuedAt: jwt.NewNumericDate(time.Now()),
+					// NOTE: An expiration time for refresh token should be 24 hours,
+					// after that a user will be prompted to login again
+					ExpiresAt: jwt.NewNumericDate(time.Now().Add(refreshTokenExpiry)),
 				},
 			},
 		)
@@ -252,6 +256,31 @@ func main() {
 			AccessToken:  signedAccessToken,
 			RefreshToken: signedRefreshToken,
 		}
+
+		ctx.Cookie(&fiber.Cookie{
+			Name:     "refreshTokenCookie",
+			Value:    signedRefreshToken,
+			Path:     "/", // /refresh?
+			Expires:  time.Now().Add(refreshTokenExpiry),
+			MaxAge:   int(refreshTokenExpiry.Seconds()),
+			HTTPOnly: true, // javascript will have no access to this cookie
+			Secure:   true,
+			SameSite: fiber.CookieSameSiteStrictMode,
+		})
+
+		// NOTE: In order to delete a cookie we should include
+		// the same cookie into a request which contains the same fields
+		// with expiry date set to the past, and maxage set to -1
+		// ctx.Cookie(&fiber.Cookie{
+		// 	Name:     "refreshTokenCookie",
+		// 	Value:    "",
+		// 	Path:     "/", // /refresh?
+		// 	Expires:  time.Now().Add(-(time.Hour * 2)),
+		// 	MaxAge:   -1,
+		// 	HTTPOnly: true,
+		// 	Secure:   true,
+		// 	SameSite: fiber.CookieSameSiteStrictMode,
+		// })
 
 		return ctx.JSON(tokensPair, "application/json")
 	})
