@@ -138,18 +138,24 @@ func main() {
 		ServerHeader: "Fiber",
 	})
 
+	cookieName := "__Host-refresh_token"
+	refreshTokenExpiry := time.Hour * 24
+	jwtSecret := []byte("my-secret") // NOTE: This has to be a private key
+
 	// CORS middleware
 	app.Use("/", func(ctx *fiber.Ctx) error {
 		fmt.Println("Middleware function was triggered")
 
-		ctx.Set("Access-Control-Allow-Origin", "*")
+		// TODO: This has to be moved into a separate function
+
+		// CORS - cross origin request sharing
+		// This is the address that our frontend is running on
+		ctx.Set("Access-Control-Allow-Origin", "http://localhost:3000")
+		ctx.Set("Access-Control-Allow-Credentials", "true")
 
 		if ctx.Method() == "OPTIONS" {
-			// NOTE: Without this header none of PUT/POST requests would work
-			ctx.Set("Access-Control-Allow-Credentials", "true")
 			ctx.Set("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,PATCH,OPTIONS")
-			ctx.Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-
+			ctx.Set("Access-Control-Allow-Headers", "Accept, X-CSRF-Token, Content-Type, Authorization")
 			return nil
 		}
 
@@ -157,7 +163,13 @@ func main() {
 	})
 
 	app.Put("/api/openai/:message", func(ctx *fiber.Ctx) error {
+		cookieRefreshToken := ctx.Cookies(cookieName)
+		if cookieRefreshToken != "" {
+			fmt.Printf("Cookie value: %s\n", cookieRefreshToken)
+		}
+
 		messsage := ctx.Params("message")
+
 		fmt.Printf("Got a message: %s\n", messsage)
 
 		reqBody := ctx.Request().Body()
@@ -182,7 +194,38 @@ func main() {
 		}, "application/json")
 	})
 
+	app.Get("/api/refresh", func(ctx *fiber.Ctx) error {
+		cookieRefreshToken := ctx.Cookies(cookieName)
+		if cookieRefreshToken != "" {
+			fmt.Printf("Cookie value: %s\n", cookieRefreshToken)
+		}
+
+		return nil
+	})
+
 	app.Post("/api/login", func(ctx *fiber.Ctx) error {
+		cookieRefreshToken := ctx.Cookies(cookieName)
+		if cookieRefreshToken != "" {
+			fmt.Printf("Refresh token cookie: %s\n", cookieRefreshToken)
+
+			claims := &Claims{}
+
+			// Parse the token to get the claims
+			_, err := jwt.ParseWithClaims(cookieRefreshToken, claims, func(token *jwt.Token) (interface{}, error) {
+				return jwtSecret, nil
+			})
+			if err != nil {
+				return fiber.NewError(fiber.StatusUnauthorized, "Failed to extract claims from the refresh token")
+			}
+
+			userEmail := claims.RegisteredClaims.Subject
+			if userEmail == "" {
+				return fiber.NewError(fiber.StatusUnauthorized)
+			}
+
+			// TODO: Make sure that such user exists in a database
+		}
+
 		var userData UserData
 		if err := json.Unmarshal(ctx.Body(), &userData); err != nil {
 			return fiber.NewError(fiber.StatusBadRequest, "Failed to unmarshal request body")
@@ -225,12 +268,10 @@ func main() {
 			})
 
 		// Sign token using a secret key, it should be private key
-		signedAccessToken, err := token.SignedString([]byte("my-secret"))
+		signedAccessToken, err := token.SignedString(jwtSecret)
 		if err != nil {
 			return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("Failed to sign access token: %v", err))
 		}
-
-		refreshTokenExpiry := time.Hour * 24
 
 		// TODO: We should pass an expiration time as well.
 		// Create refresh token with claims
@@ -238,7 +279,8 @@ func main() {
 			jwt.SigningMethodHS256,
 			&Claims{
 				RegisteredClaims: jwt.RegisteredClaims{
-					Subject:  "somebody", // supposed to be user ID?
+					// NOTE: Supposed to be a user ID in a database
+					Subject:  userData.Email,
 					IssuedAt: jwt.NewNumericDate(time.Now()),
 					// NOTE: An expiration time for refresh token should be 24 hours,
 					// after that a user will be prompted to login again
@@ -247,7 +289,7 @@ func main() {
 			},
 		)
 
-		signedRefreshToken, err := refreshToken.SignedString([]byte("my-secret"))
+		signedRefreshToken, err := refreshToken.SignedString(jwtSecret)
 		if err != nil {
 			return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("Failed to sign refresh token: %v", err))
 		}
@@ -258,7 +300,7 @@ func main() {
 		}
 
 		ctx.Cookie(&fiber.Cookie{
-			Name:     "refreshTokenCookie",
+			Name:     cookieName,
 			Value:    signedRefreshToken,
 			Path:     "/", // /refresh?
 			Expires:  time.Now().Add(refreshTokenExpiry),
@@ -268,21 +310,31 @@ func main() {
 			SameSite: fiber.CookieSameSiteStrictMode,
 		})
 
+		return ctx.JSON(tokensPair, "application/json")
+	})
+
+	app.Get("/api/logout", func(ctx *fiber.Ctx) error {
 		// NOTE: In order to delete a cookie we should include
 		// the same cookie into a request which contains the same fields
 		// with expiry date set to the past, and maxage set to -1
-		// ctx.Cookie(&fiber.Cookie{
-		// 	Name:     "refreshTokenCookie",
-		// 	Value:    "",
-		// 	Path:     "/", // /refresh?
-		// 	Expires:  time.Now().Add(-(time.Hour * 2)),
-		// 	MaxAge:   -1,
-		// 	HTTPOnly: true,
-		// 	Secure:   true,
-		// 	SameSite: fiber.CookieSameSiteStrictMode,
-		// })
+		cookieRefreshToken := ctx.Cookies(cookieName)
+		if cookieRefreshToken != "" {
+			fmt.Printf("Cookie refresh token (logout): %s\n", cookieRefreshToken)
+		}
 
-		return ctx.JSON(tokensPair, "application/json")
+		// Will remove the cookie on the client side
+		ctx.Cookie(&fiber.Cookie{
+			Name:     cookieName,
+			Value:    "",
+			Path:     "/",
+			Expires:  time.Now().Add(-(time.Hour * 2)),
+			MaxAge:   -1,
+			HTTPOnly: true,
+			Secure:   true,
+			SameSite: fiber.CookieSameSiteStrictMode,
+		})
+
+		return ctx.SendStatus(fiber.StatusOK)
 	})
 
 	app.Post("/api/signup", func(ctx *fiber.Ctx) error {
