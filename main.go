@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
@@ -58,10 +59,19 @@ type UserData struct {
 	Password string `json:"password"`
 }
 
-// /////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////
 // JWT Auth
+
+// Custom claims
 type Claims struct {
+	Email    string `json:"email"`
+	Password string `json:"pwd"`
 	jwt.RegisteredClaims
+}
+
+type TokensPairs struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
 }
 
 func (c *OpenAIClient) AskOpenAI(message string) (*OpenAIResp, error) {
@@ -179,13 +189,71 @@ func main() {
 		}
 
 		// TODO: Email and password validation
-		// TODO: Make a look up into a database and make sure that email and password match
-		// If the user already exists, we have to return error as well
-		fmt.Printf("Email: %s\nPassword: %s\n", userData.Email, userData.Password)
+		isValidData := true
+		if !isValidData {
+			return fiber.NewError(fiber.StatusUnprocessableEntity, "Failed to validate data")
+		}
 
-		return ctx.JSON(map[string]string{
-			"token": "DUMMY_SIGNED_JWT_TOKEN",
-		}, "application/json")
+		// Create token
+		// Set the claims
+		// Set an expiration time for jwt token
+		// Create signed token
+		// Create a refresh token and set the claims
+		// Set the expiration time for refresh token
+		// We have two token: an access_token and refresh_token
+
+		// TODO: Generate JWT token with TTL 15 minutes,
+		// and send it back to the client, so the next requests
+		// should only be made including that token.
+		// TODO: Determine which signing method to choose
+
+		// Creat a new token with claims
+		// TODO: Expiration time has to be an argument that we pass to a function
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256,
+			&Claims{
+				Email:    userData.Email,
+				Password: userData.Password,
+				RegisteredClaims: jwt.RegisteredClaims{
+					ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 15)),
+					IssuedAt:  jwt.NewNumericDate(time.Now()),
+					NotBefore: jwt.NewNumericDate(time.Now()),
+					Issuer:    "test",
+					Subject:   "somebody",
+					ID:        "1",
+					Audience:  []string{"somebody_else"},
+				},
+			})
+
+		// Sign token using a secret key, it should be private key
+		signedAccessToken, err := token.SignedString([]byte("my-secret"))
+		if err != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("Failed to sign access token: %v", err))
+		}
+
+		// TODO: We should pass an expiration time as well.
+		// Create refresh token with claims
+		refreshToken := jwt.NewWithClaims(
+			jwt.SigningMethodHS256,
+			&Claims{
+				RegisteredClaims: jwt.RegisteredClaims{
+					Subject:   "somebody", // supposed to be user ID?
+					IssuedAt:  jwt.NewNumericDate(time.Now()),
+					ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 45)),
+				},
+			},
+		)
+
+		signedRefreshToken, err := refreshToken.SignedString([]byte("my-secret"))
+		if err != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("Failed to sign refresh token: %v", err))
+		}
+
+		tokensPair := TokensPairs{
+			AccessToken:  signedAccessToken,
+			RefreshToken: signedRefreshToken,
+		}
+
+		return ctx.JSON(tokensPair, "application/json")
 	})
 
 	app.Post("/api/signup", func(ctx *fiber.Ctx) error {
