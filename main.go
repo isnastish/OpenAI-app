@@ -8,8 +8,8 @@ import (
 	"syscall"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/golang-jwt/jwt/v5"
 
+	"github.com/isnastish/openai/pkg/api"
 	"github.com/isnastish/openai/pkg/auth"
 	"github.com/isnastish/openai/pkg/log"
 	"github.com/isnastish/openai/pkg/openai"
@@ -22,18 +22,8 @@ type UserData struct {
 	Password string `json:"password"`
 }
 
-type Claims struct {
-	Email    string `json:"email"`
-	Password string `json:"pwd"`
-	jwt.RegisteredClaims
-}
-
-type TokensPairs struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-}
-
 func main() {
+	// TODO: This should be moved to API package before the app creation
 	openaiClient, err := openai.NewOpenAIClient()
 	if err != nil {
 		log.Logger.Fatal("Failed to create openai client: %v", err)
@@ -41,29 +31,12 @@ func main() {
 
 	authManager := auth.NewAuthManager([]byte("my-dummy-secret"))
 
-	// the server which will accept requests from the frontend
 	app := fiber.New(fiber.Config{
 		Prefork:      true,
 		ServerHeader: "Fiber",
 	})
 
-	// CORS middleware
-	app.Use("/", func(ctx *fiber.Ctx) error {
-		fmt.Println("Middleware function was triggered")
-		// TODO: This has to be moved into a separate function
-		// CORS - cross origin request sharing
-		// This is the address that our frontend is running on
-		ctx.Set("Access-Control-Allow-Origin", "http://localhost:3000")
-		ctx.Set("Access-Control-Allow-Credentials", "true")
-
-		if ctx.Method() == "OPTIONS" {
-			ctx.Set("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,PATCH,OPTIONS")
-			ctx.Set("Access-Control-Allow-Headers", "Accept, X-CSRF-Token, Content-Type, Authorization")
-			return nil
-		}
-
-		return ctx.Next()
-	})
+	app.Use("/", api.SetupCORSMiddleware)
 
 	app.Put("/api/openai/:message", func(ctx *fiber.Ctx) error {
 		messsage := ctx.Params("message")
@@ -93,7 +66,6 @@ func main() {
 		// if cookieRefreshToken != "" {
 		// 	fmt.Printf("Cookie value: %s\n", cookieRefreshToken)
 		// }
-
 		return nil
 	})
 
@@ -104,7 +76,6 @@ func main() {
 		}
 
 		// TODO: Email and password validation
-
 		tokenPair, err := authManager.GetTokensPair(userData.Email, userData.Password)
 		if err != nil {
 		}
