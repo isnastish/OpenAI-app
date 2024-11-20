@@ -8,11 +8,7 @@ import (
 	"github.com/isnastish/openai/pkg/openai"
 )
 
-func (a *App) OpenaAIMessageHandler(ctx *fiber.Ctx) error {
-	messsage := ctx.Params("message")
-
-	fmt.Printf("Got a message: %s\n", messsage)
-
+func (a *App) OpenaAIMessageRoute(ctx *fiber.Ctx) error {
 	reqBody := ctx.Request().Body()
 
 	var reqData openai.OpenAIRequest
@@ -31,7 +27,7 @@ func (a *App) OpenaAIMessageHandler(ctx *fiber.Ctx) error {
 	}, "application/json")
 }
 
-func (a *App) RefreshCookieHanlder(ctx *fiber.Ctx) error {
+func (a *App) RefreshCookieRoute(ctx *fiber.Ctx) error {
 	// cookieRefreshToken := ctx.Cookies(cookieName)
 	// if cookieRefreshToken != "" {
 	// 	fmt.Printf("Cookie value: %s\n", cookieRefreshToken)
@@ -39,19 +35,11 @@ func (a *App) RefreshCookieHanlder(ctx *fiber.Ctx) error {
 	return nil
 }
 
-func (a *App) LoginHandler(ctx *fiber.Ctx) error {
-	//
-	// TODO: Determine where to put user data
-	//
-
+func (a *App) LoginRoute(ctx *fiber.Ctx) error {
 	var userData UserData
 	if err := json.Unmarshal(ctx.Body(), &userData); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "Failed to unmarshal request body")
 	}
-
-	//
-	// TODO: Email and password validation, and make sure that such user exists in a database.
-	//
 
 	tokenPair, err := a.Auth.GetTokensPair(userData.Email, userData.Password)
 	if err != nil {

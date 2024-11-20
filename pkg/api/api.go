@@ -10,6 +10,10 @@ import (
 	"github.com/isnastish/openai/pkg/openai"
 )
 
+//
+// NOTE: This should be internal to the package.
+//
+
 type UserData struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
@@ -40,7 +44,12 @@ func NewApp(port int) (*App, error) {
 	}
 
 	app.FiberApp.Use("/", SetupCORSMiddleware)
-	app.FiberApp.Put("/api/openai/:message", app.OpenaAIMessageHandler)
+
+	app.FiberApp.Put("/api/openai", app.OpenaAIMessageRoute)
+	app.FiberApp.Post("/api/login", app.LoginRoute)
+	app.FiberApp.Post("/api/signup", app.SignupRoute)
+	app.FiberApp.Get("/api/logout", app.LogoutRoute)
+	app.FiberApp.Get("/api/refresh", app.RefreshCookieRoute)
 
 	return app, nil
 }
