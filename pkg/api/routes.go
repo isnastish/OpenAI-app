@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/isnastish/openai/pkg/openai"
@@ -62,25 +63,17 @@ func (a *App) LoginRoute(ctx *fiber.Ctx) error {
 }
 
 func (a *App) LogoutRoute(ctx *fiber.Ctx) error {
-	// NOTE: In order to delete a cookie we should include
-	// the same cookie into a request which contains the same fields
-	// with expiry date set to the past, and maxage set to -1
-	// cookieRefreshToken := ctx.Cookies(cookieName)
-	// if cookieRefreshToken != "" {
-	// 	fmt.Printf("Cookie refresh token (logout): %s\n", cookieRefreshToken)
-	// }
-
 	// Will remove the cookie on the client side
-	// ctx.Cookie(&fiber.Cookie{
-	// 	Name:     cookieName,
-	// 	Value:    "",
-	// 	Path:     "/",
-	// 	Expires:  time.Now().Add(-(time.Hour * 2)),
-	// 	MaxAge:   -1,
-	// 	HTTPOnly: true,
-	// 	Secure:   true,
-	// 	SameSite: fiber.CookieSameSiteStrictMode,
-	// })
+	ctx.Cookie(&fiber.Cookie{
+		Name:     a.Auth.CookieName,
+		Value:    "",
+		Path:     "/",
+		Expires:  time.Now().Add(-(time.Hour * 2)),
+		MaxAge:   -1,
+		HTTPOnly: true,
+		Secure:   true,
+		SameSite: fiber.CookieSameSiteStrictMode,
+	})
 
 	return ctx.SendStatus(fiber.StatusOK)
 }

@@ -6,12 +6,13 @@ import (
 	"github.com/gofiber/fiber/v2"
 
 	"github.com/isnastish/openai/pkg/auth"
+	"github.com/isnastish/openai/pkg/db"
 	"github.com/isnastish/openai/pkg/log"
 	"github.com/isnastish/openai/pkg/openai"
 )
 
 //
-// NOTE: This should be internal to the package.
+// NOTE: This should be internal.
 //
 
 type UserData struct {
@@ -24,6 +25,9 @@ type App struct {
 	Auth         *auth.AuthManager
 	FiberApp     *fiber.App
 	Port         int
+	// NOTE: This should be an interface,
+	// but for now let's stick with Postgres since this is the only db we support
+	Db *db.PostgresDB
 }
 
 func NewApp(port int) (*App, error) {
@@ -31,6 +35,11 @@ func NewApp(port int) (*App, error) {
 	if err != nil {
 		return nil, fmt.Errorf("")
 		// log.Logger.Fatal("Failed to create openai client: %v", err)
+	}
+
+	db, err := db.NewPostgresDB()
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to db: %v", err)
 	}
 
 	app := &App{
@@ -41,6 +50,7 @@ func NewApp(port int) (*App, error) {
 			ServerHeader: "Fiber",
 		}),
 		Port: port,
+		Db:   db,
 	}
 
 	app.FiberApp.Use("/", SetupCORSMiddleware)
@@ -65,6 +75,8 @@ func (a *App) Serve() error {
 }
 
 func (a *App) Shutdown() error {
+	defer a.Db.Close()
+
 	if err := a.FiberApp.Shutdown(); err != nil {
 		return fmt.Errorf("server shutdown failed: %v", err)
 	}
