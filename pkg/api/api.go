@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 
 	"github.com/isnastish/openai/pkg/auth"
 	"github.com/isnastish/openai/pkg/db"
@@ -33,8 +34,7 @@ type App struct {
 func NewApp(port int) (*App, error) {
 	openaiClient, err := openai.NewOpenAIClient()
 	if err != nil {
-		return nil, fmt.Errorf("")
-		// log.Logger.Fatal("Failed to create openai client: %v", err)
+		return nil, fmt.Errorf("Failed to create an OpenAI client: %v", err)
 	}
 
 	db, err := db.NewPostgresDB()
@@ -53,8 +53,15 @@ func NewApp(port int) (*App, error) {
 		Db:   db,
 	}
 
+	// CORS middleware
 	app.FiberApp.Use("/", SetupCORSMiddleware)
 
+	// logging middleware
+	app.FiberApp.Use(logger.New(logger.Config{
+		Format: "[${ip}]:${port} ${status} - ${method} ${path}\n",
+	}))
+
+	// this route has to be protected
 	app.FiberApp.Put("/api/openai", app.OpenaAIMessageRoute)
 	app.FiberApp.Post("/api/login", app.LoginRoute)
 	app.FiberApp.Post("/api/signup", app.SignupRoute)
