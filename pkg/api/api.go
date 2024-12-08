@@ -33,8 +33,7 @@ type App struct {
 func NewApp(port int) (*App, error) {
 	openaiClient, err := openai.NewOpenAIClient()
 	if err != nil {
-		return nil, fmt.Errorf("")
-		// log.Logger.Fatal("Failed to create openai client: %v", err)
+		return nil, fmt.Errorf("Failed to create an OpenAI client: %v", err)
 	}
 
 	db, err := db.NewPostgresDB()
@@ -55,6 +54,7 @@ func NewApp(port int) (*App, error) {
 
 	app.FiberApp.Use("/", SetupCORSMiddleware)
 
+	// this route has to be protected
 	app.FiberApp.Put("/api/openai", app.OpenaAIMessageRoute)
 	app.FiberApp.Post("/api/login", app.LoginRoute)
 	app.FiberApp.Post("/api/signup", app.SignupRoute)

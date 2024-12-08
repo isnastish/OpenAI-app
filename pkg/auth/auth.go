@@ -35,7 +35,6 @@ type AuthManager struct {
 }
 
 func NewAuthManager(jwtSecret []byte) *AuthManager {
-	// cookieName
 	return &AuthManager{
 		CookieName:      "__Host-refresh_token",
 		AccessTokenTTL:  time.Minute * 15,
