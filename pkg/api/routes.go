@@ -17,6 +17,7 @@ func (a *App) OpenaAIMessageRoute(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Failed to unmarshal request body")
 	}
 
+	// make a requests to OpenAI server
 	resp, err := a.OpenaiClient.AskOpenAI(reqData.OpenaiQuestion)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("openai: %s", err.Error()))
