@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -8,6 +9,9 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/isnastish/openai/pkg/openai"
 )
+
+// NOTE: The business logic shouldn't be in routes, it should be moved to controllers
+// Probably in controllers
 
 func (a *App) OpenaAIMessageRoute(ctx *fiber.Ctx) error {
 	reqBody := ctx.Request().Body()
@@ -18,7 +22,12 @@ func (a *App) OpenaAIMessageRoute(ctx *fiber.Ctx) error {
 	}
 
 	// make a requests to OpenAI server
-	resp, err := a.OpenaiClient.AskOpenAI(reqData.OpenaiQuestion)
+
+	reqCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+
+	defer cancel() // NOTE: Not sure whether this is the best place where to put this
+
+	resp, err := a.openaiClient.AskOpenAI(reqCtx, reqData.OpenaiQuestion)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("openai: %s", err.Error()))
 	}
@@ -43,11 +52,11 @@ func (a *App) LoginRoute(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Failed to unmarshal request body")
 	}
 
-	tokenPair, err := a.Auth.GetTokensPair(userData.Email, userData.Password)
+	tokenPair, err := a.auth.GetTokensPair(userData.Email, userData.Password)
 	if err != nil {
 	}
 
-	cookie := a.Auth.GetCookie(tokenPair.RefreshToken)
+	cookie := a.auth.GetCookie(tokenPair.RefreshToken)
 
 	ctx.Cookie(&fiber.Cookie{
 		Name:     cookie.Name,
@@ -66,7 +75,7 @@ func (a *App) LoginRoute(ctx *fiber.Ctx) error {
 func (a *App) LogoutRoute(ctx *fiber.Ctx) error {
 	// Will remove the cookie on the client side
 	ctx.Cookie(&fiber.Cookie{
-		Name:     a.Auth.CookieName,
+		Name:     a.auth.CookieName,
 		Value:    "",
 		Path:     "/",
 		Expires:  time.Now().Add(-(time.Hour * 2)),

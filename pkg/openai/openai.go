@@ -2,6 +2,7 @@ package openai
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -31,23 +32,25 @@ type OpenAIRequest struct {
 }
 
 type Client struct {
-	OpenAIAPIKey string
+	openAIApiKey string
 	*http.Client
 }
 
 func NewOpenAIClient() (*Client, error) {
-	OPENAI_API_KEY, set := os.LookupEnv("OPENAI_API_KEY")
-	if set == false || OPENAI_API_KEY == "" {
+	openAIApiKey, set := os.LookupEnv("OPENAI_API_KEY")
+	if !set || openAIApiKey == "" {
 		return nil, fmt.Errorf("OPENAI_API_KEY is not set")
 	}
 
 	return &Client{
-		OpenAIAPIKey: OPENAI_API_KEY,
+		openAIApiKey: openAIApiKey,
 		Client:       &http.Client{},
 	}, nil
 }
 
-func (c *Client) AskOpenAI(message string) (*OpenAIResp, error) {
+// TODO: This should be rewritten in a more understandable way
+// And the function should be renamed
+func (c *Client) AskOpenAI(ctx context.Context, message string) (*OpenAIResp, error) {
 	messages := []map[string]string{
 		{
 			"role":    "system",
@@ -69,18 +72,19 @@ func (c *Client) AskOpenAI(message string) (*OpenAIResp, error) {
 		return nil, fmt.Errorf("Failed to marshal request body: %v", err)
 	}
 
-	req, err := http.NewRequest("POST", "https://api.openai.com/v1/chat/completions", bytes.NewBuffer(body))
+	req, err := http.NewRequestWithContext(ctx, "POST", "https://api.openai.com/v1/chat/completions", bytes.NewBuffer(body))
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create a request: %v", err)
 	}
 
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", c.OpenAIAPIKey))
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", c.openAIApiKey))
 
 	resp, err := c.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to make request: %v", err)
 	}
+
 	defer resp.Body.Close()
 
 	// TODO: Read API documentation for possible error codes
