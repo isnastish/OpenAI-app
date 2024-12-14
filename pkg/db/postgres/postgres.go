@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/isnastish/openai/pkg/api/models"
 	hashutils "github.com/isnastish/openai/pkg/hash_utils"
 	"github.com/isnastish/openai/pkg/ipresolver"
 	"github.com/isnastish/openai/pkg/log"
@@ -73,7 +74,7 @@ func (pc *PostgresController) createTable(ctx context.Context) error {
 	return nil
 }
 
-func (pc *PostgresController) AddUser(ctx context.Context, firstName, lastName, email, password string, geolocationData *ipresolver.GeolocationData) error {
+func (pc *PostgresController) AddUser(ctx context.Context, userData *models.UserData, geolocationData *ipresolver.GeolocationData) error {
 	conn, err := pc.connPool.Acquire(ctx)
 	if err != nil {
 		return fmt.Errorf("postgres: failed to acquire connection from the pool, error: %v", err)
@@ -86,9 +87,10 @@ func (pc *PostgresController) AddUser(ctx context.Context, firstName, lastName, 
 		"country", "city", "country_code"
 	) values ($1, $2, $3, $4, $5, $6, $7);`
 
-	hashedPassword := hashutils.NewSha256([]byte(password))
+	hashedPassword := hashutils.NewSha256([]byte(userData.Password))
 
-	if _, err := conn.Exec(ctx, query, firstName, lastName, email, hashedPassword, geolocationData.Country, geolocationData.City, geolocationData.CountryCode); err != nil {
+	if _, err := conn.Exec(ctx, query, userData.FirstName, userData.LastName,
+		userData.Email, hashedPassword, geolocationData.Country, geolocationData.City, geolocationData.CountryCode); err != nil {
 		return fmt.Errorf("postgres: failed to add user, error: %v", err)
 	}
 

@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 
+	"github.com/isnastish/openai/pkg/api/models"
 	"github.com/isnastish/openai/pkg/ipresolver"
 )
 
@@ -16,7 +17,7 @@ import (
 type DatabaseController interface {
 	// TODO: Probably we can pass UserData struct instead of passing
 	// each field separately.
-	AddUser(ctx context.Context, firstName, lastName, email, password string, geolocationData *ipresolver.GeolocationData) error
+	AddUser(ctx context.Context, userData *models.UserData, geolocationData *ipresolver.GeolocationData) error
 	HasUser(ctx context.Context, email string) (bool, error)
 	Close() error
 }

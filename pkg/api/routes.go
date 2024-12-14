@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/isnastish/openai/pkg/api/models"
 	"github.com/isnastish/openai/pkg/openai"
 )
 
@@ -15,6 +16,9 @@ import (
 // Probably there should be a separte controller responsible for this.
 // It should be relatively straightforward to replace the router,
 // without doing any modifications for business logic.
+//
+// This is a controller which contains all the routes that an application
+// exposes.
 
 func (a *App) OpenaAIRoute(ctx *fiber.Ctx) error {
 	reqBody := ctx.Request().Body()
@@ -47,7 +51,7 @@ func (a *App) RefreshCookieRoute(ctx *fiber.Ctx) error {
 }
 
 func (a *App) LoginRoute(ctx *fiber.Ctx) error {
-	var userData UserData
+	var userData models.UserData
 	if err := json.Unmarshal(ctx.Body(), &userData); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "Failed to unmarshal request body")
 	}
@@ -89,7 +93,12 @@ func (a *App) LogoutRoute(ctx *fiber.Ctx) error {
 }
 
 func (a *App) SignupRoute(ctx *fiber.Ctx) error {
-	var userData UserData
+	// Retrieve user's IP address,
+	// get geolocation data
+	// add user to the database together with its geolocation data
+	// set the cookie which contains a session token and a corresponding jwt token?
+
+	var userData models.UserData
 	if err := json.Unmarshal(ctx.Body(), &userData); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "Failed to unmarshal request body")
 	}
