@@ -8,7 +8,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/isnastish/openai/pkg/api/models"
-	"github.com/isnastish/openai/pkg/openai"
 )
 
 // TODO: There should be a clear separation between routes and
@@ -23,7 +22,7 @@ import (
 func (a *App) OpenaAIRoute(ctx *fiber.Ctx) error {
 	reqBody := ctx.Request().Body()
 
-	var reqData openai.OpenAIRequest
+	var reqData models.OpenAIRequest
 	if err := json.Unmarshal(reqBody, &reqData); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "Failed to unmarshal request body")
 	}

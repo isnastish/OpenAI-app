@@ -8,28 +8,9 @@ import (
 	"io"
 	"net/http"
 	"os"
+
+	"github.com/isnastish/openai/pkg/api/models"
 )
-
-type OpenAIMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
-
-type OpenAIChoiceEntry struct {
-	Index   int           `json:"index"`
-	Message OpenAIMessage `json:"message"`
-}
-
-type OpenAIResp struct {
-	Model   string              `json:"model"`
-	Choices []OpenAIChoiceEntry `json:"choices"`
-}
-
-// This is not a request to OpenAI api, it's a request made from our frontend
-// to the backend server
-type OpenAIRequest struct {
-	OpenaiQuestion string `json:"openai-question"`
-}
 
 type Client struct {
 	openAIApiKey string
@@ -50,7 +31,7 @@ func NewOpenAIClient() (*Client, error) {
 
 // TODO: This should be rewritten in a more understandable way
 // And the function should be renamed
-func (c *Client) AskOpenAI(ctx context.Context, message string) (*OpenAIResp, error) {
+func (c *Client) AskOpenAI(ctx context.Context, message string) (*models.OpenAIResp, error) {
 	messages := []map[string]string{
 		{
 			"role":    "system",
@@ -97,7 +78,7 @@ func (c *Client) AskOpenAI(ctx context.Context, message string) (*OpenAIResp, er
 		return nil, fmt.Errorf("Failed to read the response body: %v", err)
 	}
 
-	var openAIResp OpenAIResp
+	var openAIResp models.OpenAIResp
 	err = json.Unmarshal(respBytes, &openAIResp)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to unmarshal the response body: %v", err)
