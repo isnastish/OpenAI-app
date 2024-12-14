@@ -1,80 +1,99 @@
 package api
 
 import (
+	"context"
 	"fmt"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 
 	"github.com/isnastish/openai/pkg/auth"
 	"github.com/isnastish/openai/pkg/db"
+	"github.com/isnastish/openai/pkg/db/postgres"
+	"github.com/isnastish/openai/pkg/ipresolver"
 	"github.com/isnastish/openai/pkg/log"
 	"github.com/isnastish/openai/pkg/openai"
 )
 
-//
-// NOTE: This should be internal.
-//
-
 type UserData struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Email     string `json:"email"`
+	Password  string `json:"password"`
 }
 
+// TODO: This should probably be renamed to server instead of App
 type App struct {
-	OpenaiClient *openai.Client
-	Auth         *auth.AuthManager
-	FiberApp     *fiber.App
-	Port         int
-	// NOTE: This should be an interface,
-	// but for now let's stick with Postgres since this is the only db we support
-	Db *db.PostgresDB
+	// http server
+	fiberApp *fiber.App
+	// client for interacting with openai model
+	openaiClient *openai.Client
+	// ip resovler client for retrieving geolocation data
+	ipResolverClient *ipresolver.Client
+	// authentication manager
+	auth *auth.AuthManager
+	// database controller for persisting data
+	dbController db.DatabaseController
+	// settings
+	port int
 }
 
-func NewApp(port int) (*App, error) {
+func NewApp(port int /*TODO: pass a secret */) (*App, error) {
 	openaiClient, err := openai.NewOpenAIClient()
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create an OpenAI client: %v", err)
+		return nil, fmt.Errorf("failed to create an OpenAI client, error: %v", err)
 	}
 
-	db, err := db.NewPostgresDB()
+	ipResolverClient, err := ipresolver.NewClient()
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to db: %v", err)
+		return nil, fmt.Errorf("failed to create an ipresolver client, error: %v", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	// NOTE: For now let's go with db controller,
+	// but we should select the contoller based on some env
+	// variable DATABASE_CONTROLLER, for example.
+	dbContoller, err := postgres.NewPostgresController(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	app := &App{
-		OpenaiClient: openaiClient,
-		Auth:         auth.NewAuthManager([]byte("my-dummy-secret")),
-		FiberApp: fiber.New(fiber.Config{
+		fiberApp: fiber.New(fiber.Config{
 			Prefork:      true,
 			ServerHeader: "Fiber",
 		}),
-		Port: port,
-		Db:   db,
+		openaiClient:     openaiClient,
+		ipResolverClient: ipResolverClient,
+		auth:             auth.NewAuthManager([]byte("my-dummy-secret")),
+		dbController:     dbContoller,
+		port:             port,
 	}
 
 	// CORS middleware
-	app.FiberApp.Use("/", SetupCORSMiddleware)
+	app.fiberApp.Use("/", SetupCORSMiddleware)
 
 	// logging middleware
-	app.FiberApp.Use(logger.New(logger.Config{
-		Format: "[${ip}]:${port} ${status} - ${method} ${path}\n",
+	app.fiberApp.Use(logger.New(logger.Config{
+		Format: "[${ip}]:${port} latency:${latency} ${status} - ${method} ${path}\n",
 	}))
 
-	// this route has to be protected
-	app.FiberApp.Put("/api/openai", app.OpenaAIMessageRoute)
-	app.FiberApp.Post("/api/login", app.LoginRoute)
-	app.FiberApp.Post("/api/signup", app.SignupRoute)
-	app.FiberApp.Get("/api/logout", app.LogoutRoute)
-	app.FiberApp.Get("/api/refresh", app.RefreshCookieRoute)
+	app.fiberApp.Post("/signup", app.SignupRoute)
+	app.fiberApp.Post("/login", app.LoginRoute)
+	app.fiberApp.Get("/logout", app.LogoutRoute)
+	app.fiberApp.Get("/refresh-token", app.RefreshCookieRoute)
+	app.fiberApp.Put("/openai", app.OpenaAIMessageRoute)
 
 	return app, nil
 }
 
 func (a *App) Serve() error {
-	log.Logger.Info("Listening on port: %v", a.Port)
+	log.Logger.Info("Listening on port: %v", a.port)
 
-	if err := a.FiberApp.Listen(fmt.Sprintf(":%d", a.Port)); err != nil {
+	if err := a.fiberApp.Listen(fmt.Sprintf(":%d", a.port)); err != nil {
 		return fmt.Errorf("failed to listen: %v", err)
 	}
 
@@ -82,9 +101,10 @@ func (a *App) Serve() error {
 }
 
 func (a *App) Shutdown() error {
-	defer a.Db.Close()
+	// close database connnection first
+	defer a.dbController.Close()
 
-	if err := a.FiberApp.Shutdown(); err != nil {
+	if err := a.fiberApp.Shutdown(); err != nil {
 		return fmt.Errorf("server shutdown failed: %v", err)
 	}
 
