@@ -10,7 +10,6 @@ import (
 
 	"github.com/isnastish/openai/pkg/api/models"
 	hashutils "github.com/isnastish/openai/pkg/hash_utils"
-	"github.com/isnastish/openai/pkg/ipresolver"
 	"github.com/isnastish/openai/pkg/log"
 )
 
@@ -74,7 +73,7 @@ func (pc *PostgresController) createTable(ctx context.Context) error {
 	return nil
 }
 
-func (pc *PostgresController) AddUser(ctx context.Context, userData *models.UserData, geolocationData *ipresolver.GeolocationData) error {
+func (pc *PostgresController) AddUser(ctx context.Context, userData *models.UserData, geolocationData *models.GeolocationData) error {
 	conn, err := pc.connPool.Acquire(ctx)
 	if err != nil {
 		return fmt.Errorf("postgres: failed to acquire connection from the pool, error: %v", err)
