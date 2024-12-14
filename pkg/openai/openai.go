@@ -17,10 +17,10 @@ type Client struct {
 	httpClient   *http.Client
 }
 
-func NewOpenAIClient() (*Client, error) {
+func NewClient() (*Client, error) {
 	openAIApiKey, set := os.LookupEnv("OPENAI_API_KEY")
 	if !set || openAIApiKey == "" {
-		return nil, fmt.Errorf("OPENAI_API_KEY is not set")
+		return nil, fmt.Errorf("openai: OPENAI_API_KEY is not set")
 	}
 
 	return &Client{
