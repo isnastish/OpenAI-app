@@ -10,10 +10,13 @@ import (
 	"github.com/isnastish/openai/pkg/openai"
 )
 
-// NOTE: The business logic shouldn't be in routes, it should be moved to controllers
-// Probably in controllers
+// TODO: There should be a clear separation between routes and
+// business logic that is performed in those routes.
+// Probably there should be a separte controller responsible for this.
+// It should be relatively straightforward to replace the router,
+// without doing any modifications for business logic.
 
-func (a *App) OpenaAIMessageRoute(ctx *fiber.Ctx) error {
+func (a *App) OpenaAIRoute(ctx *fiber.Ctx) error {
 	reqBody := ctx.Request().Body()
 
 	var reqData openai.OpenAIRequest
@@ -21,11 +24,8 @@ func (a *App) OpenaAIMessageRoute(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Failed to unmarshal request body")
 	}
 
-	// make a requests to OpenAI server
-
 	reqCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-
-	defer cancel() // NOTE: Not sure whether this is the best place where to put this
+	defer cancel()
 
 	resp, err := a.openaiClient.AskOpenAI(reqCtx, reqData.OpenaiQuestion)
 	if err != nil {

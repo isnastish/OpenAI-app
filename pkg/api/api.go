@@ -85,7 +85,7 @@ func NewApp(port int /*TODO: pass a secret */) (*App, error) {
 	app.fiberApp.Post("/login", app.LoginRoute)
 	app.fiberApp.Get("/logout", app.LogoutRoute)
 	app.fiberApp.Get("/refresh-token", app.RefreshCookieRoute)
-	app.fiberApp.Put("/openai", app.OpenaAIMessageRoute)
+	app.fiberApp.Put("/openai", app.OpenaAIRoute)
 
 	return app, nil
 }

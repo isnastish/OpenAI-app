@@ -50,7 +50,7 @@ func NewClient() (*Client, error) {
 func (c *Client) GetGeolocationData(ipAddr string) (*GeolocationData, error) {
 	req, err := http.NewRequest("GET", fmt.Sprintf("https://api.ipflare.io/%s", ipAddr), nil)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create a request: %s", err.Error())
+		return nil, fmt.Errorf("failed to create a request: %s", err.Error())
 	}
 
 	req.Header.Add("X-API-Key", c.ipflareApiKey)
