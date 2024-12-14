@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/jackc/pgx"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	hashutils "github.com/isnastish/openai/pkg/hash_utils"
@@ -95,7 +96,26 @@ func (pc *PostgresController) AddUser(ctx context.Context, firstName, lastName, 
 }
 
 func (pc *PostgresController) HasUser(ctx context.Context, email string) (bool, error) {
-	return false, nil
+	conn, err := pc.connPool.Acquire(ctx)
+	if err != nil {
+		return false, fmt.Errorf("postgres: failed to acquire database connection, error: %v", err)
+	}
+
+	defer conn.Release()
+
+	query := `SELECT "email" FROM "users" WHERE "email" = ($1);`
+	row := conn.QueryRow(ctx, query, email)
+
+	var result string
+	if err := row.Scan(&result); err != nil {
+		if err == pgx.ErrNoRows {
+			return false, nil
+		}
+
+		return false, fmt.Errorf("postgres: failed to select user, error: %v", err)
+	}
+
+	return true, nil
 }
 
 // TODO: Maybe we can have a function which will return all the users
