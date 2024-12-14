@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	port := flag.Int("port", 3031, "Listening port")
+	port := flag.Int("port", 3030, "Listening port")
 	flag.Parse()
 
 	app, err := api.NewApp(*port)
