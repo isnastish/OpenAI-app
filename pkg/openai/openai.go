@@ -14,7 +14,7 @@ import (
 
 type Client struct {
 	openAIApiKey string
-	*http.Client
+	httpClient   *http.Client
 }
 
 func NewOpenAIClient() (*Client, error) {
@@ -25,7 +25,7 @@ func NewOpenAIClient() (*Client, error) {
 
 	return &Client{
 		openAIApiKey: openAIApiKey,
-		Client:       &http.Client{},
+		httpClient:   &http.Client{},
 	}, nil
 }
 
@@ -61,7 +61,7 @@ func (c *Client) AskOpenAI(ctx context.Context, message string) (*models.OpenAIR
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", c.openAIApiKey))
 
-	resp, err := c.Do(req)
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to make request: %v", err)
 	}

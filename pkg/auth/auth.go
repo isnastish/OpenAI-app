@@ -7,6 +7,8 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// TODO: Move to models as well?
+
 type Claims struct {
 	Email    string `json:"email"`
 	Password string `json:"pwd"`
