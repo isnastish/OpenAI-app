@@ -2,17 +2,12 @@ package postgres
 
 import (
 	"context"
-	// NOTE: Instead of creating a separate utilities package
-	// and moving the function which creates a hash there,
-	// we could do in inplace in the database logic,
-	// the only problem is that we would have to duplicate the code
-	// for each database contoller, since it's not shared.
-	_ "crypto/sha256"
 	"fmt"
 	"os"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	hashutils "github.com/isnastish/openai/pkg/hash_utils"
 	"github.com/isnastish/openai/pkg/ipresolver"
 	"github.com/isnastish/openai/pkg/log"
 )
@@ -90,7 +85,11 @@ func (pc *PostgresController) AddUser(ctx context.Context, firstName, lastName, 
 		"country", "city", "country_code"
 	) values ($1, $2, $3, $4, $5, $6, $7);`
 
-	_ = query
+	hashedPassword := hashutils.NewSha256([]byte(password))
+
+	if _, err := conn.Exec(ctx, query, firstName, lastName, email, hashedPassword, geolocationData.Country, geolocationData.City, geolocationData.CountryCode); err != nil {
+		return fmt.Errorf("postgres: failed to add user, error: %v", err)
+	}
 
 	return nil
 }
