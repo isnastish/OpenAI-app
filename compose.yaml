@@ -11,7 +11,7 @@ services:
     environment:
       # TODO: Define firestore URL
       FIRESTORE_DB_URL: ""
-      OPENAI_API_KEY: "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"
+      OPENAI_API_KEY: ""
       IPFLARE_API_KEY: "d4815a7185da6aae.69f941c643a3f41f751fcc9ef59dcfcfed08a00fb57907b4e750a4a1cdbffc3a"
       POSTGRES_URL: "postgres://postgres:password@postgres-db:5432/postgres?sslmode=disable"
     networks:
