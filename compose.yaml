@@ -1,7 +1,7 @@
 services:
-  nibble:
-    container_name: "nibble"
-    image: 'nibble:latest'
+  openai:
+    container_name: "openai"
+    image: 'openai:latest'
     build: 
       dockerfile: ./Dockerfile
     ports:
@@ -9,8 +9,9 @@ services:
     depends_on:
       - postgres-db
     environment:
+      # TODO: Define firestore URL
       FIRESTORE_DB_URL: ""
-      OPENAI_API_KEY: "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" 
+      OPENAI_API_KEY: ""
       IPFLARE_API_KEY: "d4815a7185da6aae.69f941c643a3f41f751fcc9ef59dcfcfed08a00fb57907b4e750a4a1cdbffc3a"
       POSTGRES_URL: "postgres://postgres:password@postgres-db:5432/postgres?sslmode=disable"
     networks:

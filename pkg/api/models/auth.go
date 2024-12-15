@@ -8,7 +8,7 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-type TokensPairs struct {
+type TokenPair struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
 }
