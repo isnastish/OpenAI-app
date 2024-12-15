@@ -21,6 +21,8 @@ import (
 // exposes.
 
 func (a *App) OpenaAIRoute(ctx *fiber.Ctx) error {
+	// NOTE: This route should be protected
+	// We should validate the token received from the client
 	reqBody := ctx.Request().Body()
 
 	var reqData models.OpenAIRequest
