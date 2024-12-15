@@ -11,6 +11,10 @@ type UserData struct {
 	// doesn't have the corresponding field.
 	CreatedAt time.Time `json:"-"`
 	UpdatedAt time.Time `json:"-"`
+
+	// Geolocation data
+	Country string `json:"-"`
+	City    string `json:"-"`
 }
 
 // TODO: Create a single struct which contains user's data,
