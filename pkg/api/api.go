@@ -1,13 +1,16 @@
 package api
 
 import (
+	"context"
 	"fmt"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 
 	"github.com/isnastish/openai/pkg/auth"
 	"github.com/isnastish/openai/pkg/db"
+	"github.com/isnastish/openai/pkg/db/postgres"
 	"github.com/isnastish/openai/pkg/ipresolver"
 	"github.com/isnastish/openai/pkg/log"
 	"github.com/isnastish/openai/pkg/openai"
@@ -40,28 +43,29 @@ func NewApp(port int /*TODO: pass a secret */) (*App, error) {
 		return nil, fmt.Errorf("failed to create an ipresolver client, error: %v", err)
 	}
 
-	// ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	// defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
 	// NOTE: For now let's go with db controller,
 	// but we should select the contoller based on some env
 	// variable DATABASE_CONTROLLER, for example.
-	// dbContoller, err := postgres.NewPostgresController(ctx)
-	// if err != nil {
-	// 	return nil, err
-	// }
+	dbContoller, err := postgres.NewPostgresController(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	app := &App{
 		fiberApp: fiber.New(fiber.Config{
-			Prefork:      true,
+			// TODO: Figure out the prefork parameter.
+			// Read fiber's documentation.
+			Prefork:      false,
 			ServerHeader: "Fiber",
 		}),
 		openaiClient:     openaiClient,
 		ipResolverClient: ipResolverClient,
 		auth:             auth.NewAuthManager([]byte("my-dummy-secret")),
-		// dbController:     dbContoller,
-		port: port,
-	}
+		dbController:     dbContoller,
+		port:             port}
 
 	// CORS middleware
 	app.fiberApp.Use("/", SetupCORSMiddleware)
@@ -92,8 +96,9 @@ func (a *App) Serve() error {
 
 func (a *App) Shutdown() error {
 	// close database connnection first
-	// defer a.dbController.Close()
+	defer a.dbController.Close()
 
+	// TODO: Use ShutdownWithContext instead
 	if err := a.fiberApp.Shutdown(); err != nil {
 		return fmt.Errorf("server shutdown failed: %v", err)
 	}

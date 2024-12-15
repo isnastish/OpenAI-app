@@ -1,7 +1,7 @@
 services:
-  nibble:
-    container_name: "nibble"
-    image: 'nibble:latest'
+  openai:
+    container_name: "openai"
+    image: 'openai:latest'
     build: 
       dockerfile: ./Dockerfile
     ports:

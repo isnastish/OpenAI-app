@@ -25,7 +25,7 @@ func NewPostgresController(ctx context.Context) (*PostgresController, error) {
 
 	config, err := pgxpool.ParseConfig(postgresUrl)
 	if err != nil {
-		return nil, fmt.Errorf("")
+		return nil, fmt.Errorf("postgres: failed to parse a connection config, error: %v", err)
 	}
 
 	connPool, err := pgxpool.NewWithConfig(ctx, config)
@@ -40,6 +40,8 @@ func NewPostgresController(ctx context.Context) (*PostgresController, error) {
 	if err := postgres.createTable(ctx); err != nil {
 		return nil, err
 	}
+
+	log.Logger.Info("Successfully initialized postgres database")
 
 	return postgres, nil
 }
