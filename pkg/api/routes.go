@@ -52,11 +52,12 @@ func (a *App) RefreshCookieRoute(ctx *fiber.Ctx) error {
 func (a *App) LoginRoute(ctx *fiber.Ctx) error {
 	var userData models.UserData
 	if err := json.Unmarshal(ctx.Body(), &userData); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "Failed to unmarshal request body")
+		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("failed to unmarshal request body, error: %v", err))
 	}
 
-	tokenPair, err := a.auth.GetTokensPair(userData.Email, userData.Password)
+	tokenPair, err := a.auth.GetTokenPair(userData.Email, userData.Password)
 	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError)
 	}
 
 	cookie := a.auth.GetCookie(tokenPair.RefreshToken)
@@ -99,8 +100,11 @@ func (a *App) SignupRoute(ctx *fiber.Ctx) error {
 
 	var userData models.UserData
 	if err := json.Unmarshal(ctx.Body(), &userData); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "Failed to unmarshal request body")
+		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("failed to unmarshal request body, error: %v", err))
 	}
+
+	// Get geolocation data
+	// a.ipResolverClient.GetGeolocationData()
 
 	// TODO: Make sure that the user doesn't exist
 	return fiber.NewError(fiber.StatusNotImplemented, "")

@@ -33,11 +33,11 @@ func NewAuthManager(jwtSecret []byte) *AuthManager {
 	}
 }
 
-func (a *AuthManager) GetTokensPair(userEmailAddress, userPassword string) (*models.TokensPairs, error) {
+func (a *AuthManager) GetTokenPair(userEmail string, userPassword string) (*models.TokenPair, error) {
 	// create a new token with claims
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		&models.Claims{
-			Email:    userEmailAddress,
+			Email:    userEmail,
 			Password: userPassword,
 			RegisteredClaims: jwt.RegisteredClaims{
 				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 15)),
@@ -76,7 +76,7 @@ func (a *AuthManager) GetTokensPair(userEmailAddress, userPassword string) (*mod
 		return nil, fmt.Errorf("failed to sign a refresh token: %v", err)
 	}
 
-	return &models.TokensPairs{
+	return &models.TokenPair{
 		AccessToken:  signedAccessToken,
 		RefreshToken: signedRefreshToken,
 	}, nil
