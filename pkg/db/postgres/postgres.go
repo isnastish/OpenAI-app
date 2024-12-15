@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/jackc/pgx"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -14,6 +15,9 @@ import (
 )
 
 type PostgresController struct {
+	// context timeout for database queries
+	ctxTimeout time.Duration
+	// connection pool
 	connPool *pgxpool.Pool
 }
 
@@ -121,10 +125,14 @@ func (pc *PostgresController) HasUser(ctx context.Context, email string) (bool, 
 	return true, nil
 }
 
+func (pc *PostgresController) GetUserByEmail(ctx context.Context, email string) (*models.UserData, error) {
+	return nil, nil
+}
+
 // TODO: Maybe we can have a function which will return all the users
 // in a database, and we can render them from react
 
-func (db *PostgresController) Close() error {
-	db.connPool.Close()
+func (pc *PostgresController) Close() error {
+	pc.connPool.Close()
 	return nil
 }

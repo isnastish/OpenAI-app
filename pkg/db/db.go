@@ -18,5 +18,8 @@ type DatabaseController interface {
 	// each field separately.
 	AddUser(ctx context.Context, userData *models.UserData, geolocationData *models.GeolocationData) error
 	HasUser(ctx context.Context, email string) (bool, error)
+	// If returns nil, user doesn't exist. That way we don't need to have HasUser method,
+	// which is completely obsolete.
+	GetUserByEmail(ctx context.Context, email string) (*models.UserData, error)
 	Close() error
 }

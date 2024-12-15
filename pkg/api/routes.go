@@ -69,10 +69,20 @@ func (a *App) LoginRoute(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("failed to unmarshal request body, error: %v", err))
 	}
 
-	// TODO: This has to be moved into a separate function,
-	// probably a method of user data.
-	var hashedPasswordReceivedFromDb []byte
-	if err := bcrypt.CompareHashAndPassword(hashedPasswordReceivedFromDb, []byte(userData.Password)); err != nil {
+	dbCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+
+	defer cancel()
+
+	user, err := a.dbController.GetUserByEmail(dbCtx, userData.Email)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	if user == nil {
+		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("user with email: %s doesn't exist", userData.Email))
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(userData.Password)); err != nil {
 		switch {
 		case errors.Is(err, bcrypt.ErrMismatchedHashAndPassword):
 			// User provided invalid password
