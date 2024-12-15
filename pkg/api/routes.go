@@ -7,25 +7,28 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/isnastish/openai/pkg/openai"
+	"github.com/isnastish/openai/pkg/api/models"
 )
 
-// NOTE: The business logic shouldn't be in routes, it should be moved to controllers
-// Probably in controllers
+// TODO: There should be a clear separation between routes and
+// business logic that is performed in those routes.
+// Probably there should be a separte controller responsible for this.
+// It should be relatively straightforward to replace the router,
+// without doing any modifications for business logic.
+//
+// This is a controller which contains all the routes that an application
+// exposes.
 
-func (a *App) OpenaAIMessageRoute(ctx *fiber.Ctx) error {
+func (a *App) OpenaAIRoute(ctx *fiber.Ctx) error {
 	reqBody := ctx.Request().Body()
 
-	var reqData openai.OpenAIRequest
+	var reqData models.OpenAIRequest
 	if err := json.Unmarshal(reqBody, &reqData); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "Failed to unmarshal request body")
 	}
 
-	// make a requests to OpenAI server
-
 	reqCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-
-	defer cancel() // NOTE: Not sure whether this is the best place where to put this
+	defer cancel()
 
 	resp, err := a.openaiClient.AskOpenAI(reqCtx, reqData.OpenaiQuestion)
 	if err != nil {
@@ -47,7 +50,7 @@ func (a *App) RefreshCookieRoute(ctx *fiber.Ctx) error {
 }
 
 func (a *App) LoginRoute(ctx *fiber.Ctx) error {
-	var userData UserData
+	var userData models.UserData
 	if err := json.Unmarshal(ctx.Body(), &userData); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "Failed to unmarshal request body")
 	}
@@ -89,7 +92,12 @@ func (a *App) LogoutRoute(ctx *fiber.Ctx) error {
 }
 
 func (a *App) SignupRoute(ctx *fiber.Ctx) error {
-	var userData UserData
+	// Retrieve user's IP address,
+	// get geolocation data
+	// add user to the database together with its geolocation data
+	// set the cookie which contains a session token and a corresponding jwt token?
+
+	var userData models.UserData
 	if err := json.Unmarshal(ctx.Body(), &userData); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "Failed to unmarshal request body")
 	}

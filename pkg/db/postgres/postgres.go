@@ -5,8 +5,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/isnastish/openai/pkg/log"
+	"github.com/jackc/pgx"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/isnastish/openai/pkg/api/models"
+	hashutils "github.com/isnastish/openai/pkg/hash_utils"
+	"github.com/isnastish/openai/pkg/log"
 )
 
 type PostgresController struct {
@@ -48,8 +52,17 @@ func (pc *PostgresController) createTable(ctx context.Context) error {
 
 	defer conn.Release()
 
-	query := `
-	`
+	query := `CREATE TABLE IF NOT EXISTS "users" (
+		"id" SERIAL, 
+		"first_name" VARCHAR(64) NOT NULL, 
+		"last_name" VARCHAR(64) NOT NULL,
+		"email" VARCHAR(320) NOT NULL UNIQUE,
+		"password" CHARACTER(64) NOT NULL,
+		"country" VARCHAR(64) NOT NULL, 
+		"city" VARCHAR(64) NOT NULL, 
+		"country_code" VARCHAR(32) NOT NULL,
+		PRIMARY KEY("id")
+	);`
 
 	if _, err := conn.Exec(ctx, query); err != nil {
 		return fmt.Errorf("postgres: failed to create a table, error: %v", err)
@@ -60,13 +73,54 @@ func (pc *PostgresController) createTable(ctx context.Context) error {
 	return nil
 }
 
-func (pc *PostgresController) AddUser(ctx context.Context) error {
+func (pc *PostgresController) AddUser(ctx context.Context, userData *models.UserData, geolocationData *models.GeolocationData) error {
+	conn, err := pc.connPool.Acquire(ctx)
+	if err != nil {
+		return fmt.Errorf("postgres: failed to acquire connection from the pool, error: %v", err)
+	}
+
+	defer conn.Release()
+
+	query := `INSERT INTO "users" (
+		"first_name", "last_name", "email", "password", 
+		"country", "city", "country_code"
+	) values ($1, $2, $3, $4, $5, $6, $7);`
+
+	hashedPassword := hashutils.NewSha256([]byte(userData.Password))
+
+	if _, err := conn.Exec(ctx, query, userData.FirstName, userData.LastName,
+		userData.Email, hashedPassword, geolocationData.Country, geolocationData.City, geolocationData.CountryCode); err != nil {
+		return fmt.Errorf("postgres: failed to add user, error: %v", err)
+	}
+
 	return nil
 }
 
-func (pc *PostgresController) HasUser(ctx context.Context) (bool, error) {
-	return false, nil
+func (pc *PostgresController) HasUser(ctx context.Context, email string) (bool, error) {
+	conn, err := pc.connPool.Acquire(ctx)
+	if err != nil {
+		return false, fmt.Errorf("postgres: failed to acquire database connection, error: %v", err)
+	}
+
+	defer conn.Release()
+
+	query := `SELECT "email" FROM "users" WHERE "email" = ($1);`
+	row := conn.QueryRow(ctx, query, email)
+
+	var result string
+	if err := row.Scan(&result); err != nil {
+		if err == pgx.ErrNoRows {
+			return false, nil
+		}
+
+		return false, fmt.Errorf("postgres: failed to select user, error: %v", err)
+	}
+
+	return true, nil
 }
+
+// TODO: Maybe we can have a function which will return all the users
+// in a database, and we can render them from react
 
 func (db *PostgresController) Close() error {
 	db.connPool.Close()

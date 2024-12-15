@@ -5,18 +5,8 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/isnastish/openai/pkg/api/models"
 )
-
-type Claims struct {
-	Email    string `json:"email"`
-	Password string `json:"pwd"`
-	jwt.RegisteredClaims
-}
-
-type TokensPairs struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-}
 
 type Cookie struct {
 	Name    string
@@ -31,7 +21,7 @@ type AuthManager struct {
 	CookieName      string
 	AccessTokenTTL  time.Duration
 	RefreshTokenTTL time.Duration
-	JWTSecret       []byte // or a string, but ideally it should be a private key
+	JWTSecret       []byte
 }
 
 func NewAuthManager(jwtSecret []byte) *AuthManager {
@@ -43,10 +33,10 @@ func NewAuthManager(jwtSecret []byte) *AuthManager {
 	}
 }
 
-func (a *AuthManager) GetTokensPair(userEmailAddress, userPassword string) (*TokensPairs, error) {
+func (a *AuthManager) GetTokensPair(userEmailAddress, userPassword string) (*models.TokensPairs, error) {
 	// create a new token with claims
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
-		&Claims{
+		&models.Claims{
 			Email:    userEmailAddress,
 			Password: userPassword,
 			RegisteredClaims: jwt.RegisteredClaims{
@@ -69,7 +59,7 @@ func (a *AuthManager) GetTokensPair(userEmailAddress, userPassword string) (*Tok
 	// create a new refresh token with claims
 	refreshToken := jwt.NewWithClaims(
 		jwt.SigningMethodHS256,
-		&Claims{
+		&models.Claims{
 			RegisteredClaims: jwt.RegisteredClaims{
 				// NOTE: Supposed to be a user ID in a database
 				// Subject:  userData.Email,
@@ -86,14 +76,13 @@ func (a *AuthManager) GetTokensPair(userEmailAddress, userPassword string) (*Tok
 		return nil, fmt.Errorf("failed to sign a refresh token: %v", err)
 	}
 
-	return &TokensPairs{
+	return &models.TokensPairs{
 		AccessToken:  signedAccessToken,
 		RefreshToken: signedRefreshToken,
 	}, nil
 }
 
 func (a *AuthManager) GetCookie(cookieValue string) *Cookie {
-	// TODO: Include domain name
 	return &Cookie{
 		Name:    a.CookieName,
 		Value:   cookieValue,

@@ -7,20 +7,9 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/isnastish/openai/pkg/api/models"
 	"github.com/isnastish/openai/pkg/log"
 )
-
-type GeolocationData struct {
-	Ip          string `json:"ip"`
-	City        string `json:"city"`
-	Region      string `json:"region"`
-	RegionCode  string `json:"region_code"`
-	Country     string `json:"country_name"`
-	CountryCode string `json:"country_code"`
-	// error handling
-	ErrorCode string `json:"code,omitempty"`
-	ErrorMsg  string `json:"error,omitempty"`
-}
 
 // A user facing client for interacting with an external
 // service for resolving geolocation.
@@ -47,10 +36,10 @@ func NewClient() (*Client, error) {
 // Parse its response and retreive geolocation data based on provided
 // ip address.
 // Return an error, if any, otherwise an instance of `IpInfo` containing the necessary information.
-func (c *Client) GetGeolocationData(ipAddr string) (*GeolocationData, error) {
+func (c *Client) GetGeolocationData(ipAddr string) (*models.GeolocationData, error) {
 	req, err := http.NewRequest("GET", fmt.Sprintf("https://api.ipflare.io/%s", ipAddr), nil)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create a request: %s", err.Error())
+		return nil, fmt.Errorf("failed to create a request: %s", err.Error())
 	}
 
 	req.Header.Add("X-API-Key", c.ipflareApiKey)
@@ -67,7 +56,7 @@ func (c *Client) GetGeolocationData(ipAddr string) (*GeolocationData, error) {
 		return nil, fmt.Errorf("Failed to read response body: %s", err.Error())
 	}
 
-	var geolocationData GeolocationData
+	var geolocationData models.GeolocationData
 	if err := json.Unmarshal(body, &geolocationData); err != nil {
 		return nil, fmt.Errorf("Failed to unmarshal response data: %s", err.Error())
 	}

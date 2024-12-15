@@ -1,27 +1,17 @@
 package api
 
 import (
-	"context"
 	"fmt"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 
 	"github.com/isnastish/openai/pkg/auth"
 	"github.com/isnastish/openai/pkg/db"
-	"github.com/isnastish/openai/pkg/db/postgres"
 	"github.com/isnastish/openai/pkg/ipresolver"
 	"github.com/isnastish/openai/pkg/log"
 	"github.com/isnastish/openai/pkg/openai"
 )
-
-type UserData struct {
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Email     string `json:"email"`
-	Password  string `json:"password"`
-}
 
 // TODO: This should probably be renamed to server instead of App
 type App struct {
@@ -40,7 +30,7 @@ type App struct {
 }
 
 func NewApp(port int /*TODO: pass a secret */) (*App, error) {
-	openaiClient, err := openai.NewOpenAIClient()
+	openaiClient, err := openai.NewClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create an OpenAI client, error: %v", err)
 	}
@@ -50,16 +40,16 @@ func NewApp(port int /*TODO: pass a secret */) (*App, error) {
 		return nil, fmt.Errorf("failed to create an ipresolver client, error: %v", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
+	// ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	// defer cancel()
 
 	// NOTE: For now let's go with db controller,
 	// but we should select the contoller based on some env
 	// variable DATABASE_CONTROLLER, for example.
-	dbContoller, err := postgres.NewPostgresController(ctx)
-	if err != nil {
-		return nil, err
-	}
+	// dbContoller, err := postgres.NewPostgresController(ctx)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	app := &App{
 		fiberApp: fiber.New(fiber.Config{
@@ -69,8 +59,8 @@ func NewApp(port int /*TODO: pass a secret */) (*App, error) {
 		openaiClient:     openaiClient,
 		ipResolverClient: ipResolverClient,
 		auth:             auth.NewAuthManager([]byte("my-dummy-secret")),
-		dbController:     dbContoller,
-		port:             port,
+		// dbController:     dbContoller,
+		port: port,
 	}
 
 	// CORS middleware
@@ -85,7 +75,7 @@ func NewApp(port int /*TODO: pass a secret */) (*App, error) {
 	app.fiberApp.Post("/login", app.LoginRoute)
 	app.fiberApp.Get("/logout", app.LogoutRoute)
 	app.fiberApp.Get("/refresh-token", app.RefreshCookieRoute)
-	app.fiberApp.Put("/openai", app.OpenaAIMessageRoute)
+	app.fiberApp.Put("/openai", app.OpenaAIRoute)
 
 	return app, nil
 }
@@ -102,7 +92,7 @@ func (a *App) Serve() error {
 
 func (a *App) Shutdown() error {
 	// close database connnection first
-	defer a.dbController.Close()
+	// defer a.dbController.Close()
 
 	if err := a.fiberApp.Shutdown(); err != nil {
 		return fmt.Errorf("server shutdown failed: %v", err)
