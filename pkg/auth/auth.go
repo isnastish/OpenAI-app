@@ -21,20 +21,19 @@ type AuthManager struct {
 	CookieName      string
 	AccessTokenTTL  time.Duration
 	RefreshTokenTTL time.Duration
-	JWTSecret       []byte
+	jwtSecret       []byte
 }
 
-func NewAuthManager(jwtSecret []byte) *AuthManager {
+func NewAuthManager(secret []byte) *AuthManager {
 	return &AuthManager{
 		CookieName:      "__Host-refresh_token",
 		AccessTokenTTL:  time.Minute * 15,
 		RefreshTokenTTL: time.Hour * 24,
-		JWTSecret:       jwtSecret,
+		jwtSecret:       secret,
 	}
 }
 
 func (a *AuthManager) GetTokenPair(userEmail string, userPassword string) (*models.TokenPair, error) {
-	// create a new token with claims
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		&models.Claims{
 			Email:    userEmail,
@@ -50,8 +49,9 @@ func (a *AuthManager) GetTokenPair(userEmail string, userPassword string) (*mode
 			},
 		})
 
-	// Sign token using a secret key, it should be private key
-	signedAccessToken, err := token.SignedString(a.JWTSecret)
+	// TODO: Sign a token using a secret key,
+	// ideally it should be a private key.
+	signedAccessToken, err := token.SignedString(a.jwtSecret)
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign access token: %v", err)
 	}
@@ -71,7 +71,8 @@ func (a *AuthManager) GetTokenPair(userEmail string, userPassword string) (*mode
 		},
 	)
 
-	signedRefreshToken, err := refreshToken.SignedString(a.JWTSecret)
+	// Sign an access token using our secret key.
+	signedRefreshToken, err := refreshToken.SignedString(a.jwtSecret)
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign a refresh token: %v", err)
 	}
