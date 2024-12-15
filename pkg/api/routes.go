@@ -3,10 +3,13 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"golang.org/x/crypto/bcrypt"
+
 	"github.com/isnastish/openai/pkg/api/models"
 	"github.com/isnastish/openai/pkg/log"
 )
@@ -53,9 +56,31 @@ func (a *App) RefreshCookieRoute(ctx *fiber.Ctx) error {
 }
 
 func (a *App) LoginRoute(ctx *fiber.Ctx) error {
+	// TODO: We should validate users data,
+	// an email address and user's password.
+	// In order to do that, we would have to retrieve a user from the database
+	// The only problem is that our database contains other data
+	// than UserData, its geolocation as well.
+	// If passwords don't match we return BadRequest, otherwise
+	// we proceed and update access and refresh tokens.
+
 	var userData models.UserData
 	if err := json.Unmarshal(ctx.Body(), &userData); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("failed to unmarshal request body, error: %v", err))
+	}
+
+	// TODO: This has to be moved into a separate function,
+	// probably a method of user data.
+	var hashedPasswordReceivedFromDb []byte
+	if err := bcrypt.CompareHashAndPassword(hashedPasswordReceivedFromDb, []byte(userData.Password)); err != nil {
+		switch {
+		case errors.Is(err, bcrypt.ErrMismatchedHashAndPassword):
+			// User provided invalid password
+			return fiber.NewError(fiber.StatusBadRequest, "invalid password")
+		default:
+			// other error
+			return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("failed to validate user's password, error: %v", err))
+		}
 	}
 
 	tokenPair, err := a.auth.GetTokenPair(userData.Email, userData.Password)
@@ -74,7 +99,7 @@ func (a *App) LoginRoute(ctx *fiber.Ctx) error {
 		Path:     cookie.Path,
 		Expires:  cookie.Expires,
 		MaxAge:   cookie.MaxAge,
-		HTTPOnly: true,
+		HTTPOnly: true, // javascript won't have access to this cookie in a web-browser
 		Secure:   true,
 		SameSite: fiber.CookieSameSiteStrictMode,
 	})
