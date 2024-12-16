@@ -37,12 +37,11 @@ func NewAuthManager(secret []byte) *AuthManager {
 	}
 }
 
-func (a *AuthManager) GetTokenPair(userEmail string, userPassword string) (*models.TokenPair, error) {
+func (a *AuthManager) GetTokenPair(userEmail string) (*models.TokenPair, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		&models.Claims{
+			// NOTE: There is no need to make the password be a part of claims
 			Email: userEmail,
-			// Why do we even need password?
-			Password: userPassword,
 			RegisteredClaims: jwt.RegisteredClaims{
 				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 15)),
 				IssuedAt:  jwt.NewNumericDate(time.Now()),

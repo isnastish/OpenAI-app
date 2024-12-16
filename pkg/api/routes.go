@@ -88,7 +88,42 @@ func (a *App) RefreshCookieRoute(ctx *fiber.Ctx) error {
 	// We should retrive that email address and make a lookup in a database, whether such user
 	// exists, and what's more important the token is not expired.
 
-	return nil
+	// This should probably be a use ID.
+	userEmail := claims.Subject
+
+	dbCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	user, err := a.dbController.GetUserByEmail(dbCtx, userEmail)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError)
+	}
+
+	if user == nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "unknown user")
+	}
+
+	tokenPair, err := a.auth.GetTokenPair(user.Email)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	// Create a cookie with a new refresh token and set it.
+	cookie := a.auth.GetCookie(tokenPair.RefreshToken)
+
+	// Set an actual cookie
+	ctx.Cookie(&fiber.Cookie{
+		Name:     cookie.Name,
+		Value:    cookie.Value,
+		Path:     cookie.Path,
+		Expires:  cookie.Expires,
+		MaxAge:   cookie.MaxAge,
+		HTTPOnly: true, // javascript won't have access to this cookie in a web-browser
+		Secure:   true,
+		SameSite: fiber.CookieSameSiteStrictMode,
+	})
+
+	return ctx.SendStatus(fiber.StatusOK)
 }
 
 func (a *App) LoginRoute(ctx *fiber.Ctx) error {
@@ -130,7 +165,7 @@ func (a *App) LoginRoute(ctx *fiber.Ctx) error {
 		}
 	}
 
-	tokenPair, err := a.auth.GetTokenPair(userData.Email, userData.Password)
+	tokenPair, err := a.auth.GetTokenPair(userData.Email)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError)
 	}

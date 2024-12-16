@@ -153,6 +153,12 @@ func (pc *PostgresController) GetUserByEmail(ctx context.Context, email string) 
 	return &userData, nil
 }
 
+func (pc *PostgresController) GetUserByID(ctx context.Context, id int) (*models.UserData, error) {
+	// NOTE: Use the same query but instead of email,
+	// use user ID.
+	return nil, nil
+}
+
 func (pc *PostgresController) Close() error {
 	pc.connPool.Close()
 	return nil

@@ -21,5 +21,8 @@ type DatabaseController interface {
 	// If returns nil, user doesn't exist. That way we don't need to have HasUser method,
 	// which is completely obsolete.
 	GetUserByEmail(ctx context.Context, email string) (*models.UserData, error)
+
+	// The subject from the claims should have user ID
+	GetUserByID(ctx context.Context, id int) (*models.UserData, error)
 	Close() error
 }
