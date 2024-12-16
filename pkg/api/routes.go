@@ -123,7 +123,7 @@ func (a *App) RefreshCookieRoute(ctx *fiber.Ctx) error {
 		SameSite: fiber.CookieSameSiteStrictMode,
 	})
 
-	return ctx.SendStatus(fiber.StatusOK)
+	return ctx.JSON(tokenPair, "application/json")
 }
 
 func (a *App) LoginRoute(ctx *fiber.Ctx) error {
