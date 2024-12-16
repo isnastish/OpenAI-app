@@ -69,8 +69,10 @@ func (a *App) LoginRoute(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("failed to unmarshal request body, error: %v", err))
 	}
 
-	dbCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// TODO: Perform data validation before making queries to the database.
+	// password and email address (on the submitted data).
 
+	dbCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	user, err := a.dbController.GetUserByEmail(dbCtx, userData.Email)
@@ -82,13 +84,12 @@ func (a *App) LoginRoute(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("user with email: %s doesn't exist", userData.Email))
 	}
 
+	// Compare user's password
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(userData.Password)); err != nil {
 		switch {
 		case errors.Is(err, bcrypt.ErrMismatchedHashAndPassword):
-			// User provided invalid password
 			return fiber.NewError(fiber.StatusBadRequest, "invalid password")
 		default:
-			// other error
 			return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("failed to validate user's password, error: %v", err))
 		}
 	}

@@ -58,6 +58,10 @@ func (pc *PostgresController) createTable(ctx context.Context) error {
 
 	defer conn.Release()
 
+	// TOOD: Figure out how to use timestamps
+	// "created_at" TIMESTAMP NOT NULL,
+	// "updated_at" TIMESTAMP NOT NULL,
+
 	query := `CREATE TABLE IF NOT EXISTS "users" (
 		"id" SERIAL, 
 		"first_name" VARCHAR(64) NOT NULL, 
@@ -118,7 +122,6 @@ func (pc *PostgresController) HasUser(ctx context.Context, email string) (bool, 
 		if err == pgx.ErrNoRows {
 			return false, nil
 		}
-
 		return false, fmt.Errorf("postgres: failed to select user, error: %v", err)
 	}
 
@@ -126,11 +129,29 @@ func (pc *PostgresController) HasUser(ctx context.Context, email string) (bool, 
 }
 
 func (pc *PostgresController) GetUserByEmail(ctx context.Context, email string) (*models.UserData, error) {
-	return nil, nil
-}
+	conn, err := pc.connPool.Acquire(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("postgres: failed to acquire database connection, error: %v", err)
+	}
 
-// TODO: Maybe we can have a function which will return all the users
-// in a database, and we can render them from react
+	defer conn.Release()
+
+	query := `SELECT 
+	"first_name", "last_name", "email", "password", "country", "city"
+	FROM "users" WHERE "email" = ($1);`
+
+	row := conn.QueryRow(ctx, query, email)
+
+	var userData models.UserData
+	if err := row.Scan(&userData); err != nil {
+		if err == pgx.ErrNoRows {
+			// User with provided email address doesn't exist
+			return nil, nil
+		}
+		return nil, fmt.Errorf("postgres: failed to select user, error: %v", err)
+	}
+	return &userData, nil
+}
 
 func (pc *PostgresController) Close() error {
 	pc.connPool.Close()
