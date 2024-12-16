@@ -10,6 +10,7 @@ import (
 
 // NOTE: The subject claim usually identifies one of the parties
 // to another (could be user IDs or emails)
+// Validation - is the process of checking token's signature.
 
 type Cookie struct {
 	Name    string

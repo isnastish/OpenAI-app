@@ -56,18 +56,37 @@ func (a *App) RefreshCookieRoute(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "cookie is not set")
 	}
 
+	// TODO: This whole token validation process should be moved into a separte function,
+	// inside an auth package.
+
+	// NOTE: We should refresh the token a bit before it will be expired,
+	// not after, the only problem is how to do that on the cline side.
+
 	// If the signature check passes we could trust the signed data.
-	var claims models.Claims
-	jwt.ParseWithClaims(refreshToken, claims, func(token *jwt.Token) (interface{}, error) {
+	claims := &models.Claims{}
+	token, err := jwt.ParseWithClaims(refreshToken, claims, func(token *jwt.Token) (interface{}, error) {
+		// NOTE: This might not work out.
+		// tokenClaims := token.Claims.(*models.Claims)
 		// Verify the signing method
 		// return a single secret we trust
 		return []byte(a.auth.JwtSecret), nil
 	})
 
-	// cookieRefreshToken := ctx.Cookies(cookieName)
-	// if cookieRefreshToken != "" {
-	// 	fmt.Printf("Cookie value: %s\n", cookieRefreshToken)
-	// }
+	if err != nil {
+		// TODO: Include error message?
+		return fiber.NewError(fiber.StatusUnauthorized, "unauthorized")
+	}
+
+	_ = token
+
+	// This should never fail if we refresh the token a little bit before it expires.
+	if claims.ExpiresAt == nil || time.Now().After(claims.ExpiresAt.Time) {
+		return fiber.NewError(fiber.StatusUnauthorized, "token has expired")
+	}
+
+	// NOTE: claims.Subject will contain a user ID (but in our case for now it's an email address),
+	// We should retrive that email address and make a lookup in a database, whether such user
+	// exists, and what's more important the token is not expired.
 
 	return nil
 }
