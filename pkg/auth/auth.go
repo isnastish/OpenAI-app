@@ -8,6 +8,9 @@ import (
 	"github.com/isnastish/openai/pkg/api/models"
 )
 
+// NOTE: The subject claim usually identifies one of the parties
+// to another (could be user IDs or emails)
+
 type Cookie struct {
 	Name    string
 	Value   string
@@ -21,7 +24,7 @@ type AuthManager struct {
 	CookieName      string
 	AccessTokenTTL  time.Duration
 	RefreshTokenTTL time.Duration
-	jwtSecret       []byte
+	JwtSecret       []byte
 }
 
 func NewAuthManager(secret []byte) *AuthManager {
@@ -29,20 +32,21 @@ func NewAuthManager(secret []byte) *AuthManager {
 		CookieName:      "__Host-refresh_token",
 		AccessTokenTTL:  time.Minute * 15,
 		RefreshTokenTTL: time.Hour * 24,
-		jwtSecret:       secret,
+		JwtSecret:       secret,
 	}
 }
 
 func (a *AuthManager) GetTokenPair(userEmail string, userPassword string) (*models.TokenPair, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		&models.Claims{
-			Email:    userEmail,
+			Email: userEmail,
+			// Why do we even need password?
 			Password: userPassword,
 			RegisteredClaims: jwt.RegisteredClaims{
 				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 15)),
 				IssuedAt:  jwt.NewNumericDate(time.Now()),
 				NotBefore: jwt.NewNumericDate(time.Now()),
-				Issuer:    "test",
+				Issuer:    "openai-server",
 				// Subject:   "",
 				ID:       "1",
 				Audience: []string{"openai-frontend"},
@@ -51,7 +55,7 @@ func (a *AuthManager) GetTokenPair(userEmail string, userPassword string) (*mode
 
 	// TODO: Sign a token using a secret key,
 	// ideally it should be a private key.
-	signedAccessToken, err := token.SignedString(a.jwtSecret)
+	signedAccessToken, err := token.SignedString(a.JwtSecret)
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign access token: %v", err)
 	}
@@ -62,7 +66,7 @@ func (a *AuthManager) GetTokenPair(userEmail string, userPassword string) (*mode
 		&models.Claims{
 			RegisteredClaims: jwt.RegisteredClaims{
 				// NOTE: Supposed to be a user ID in a database
-				// Subject:  userData.Email,
+				Subject:  userEmail,
 				IssuedAt: jwt.NewNumericDate(time.Now()),
 				// NOTE: An expiration time for refresh token should be 24 hours,
 				// after that a user will be prompted to login again
@@ -72,7 +76,7 @@ func (a *AuthManager) GetTokenPair(userEmail string, userPassword string) (*mode
 	)
 
 	// Sign an access token using our secret key.
-	signedRefreshToken, err := refreshToken.SignedString(a.jwtSecret)
+	signedRefreshToken, err := refreshToken.SignedString(a.JwtSecret)
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign a refresh token: %v", err)
 	}

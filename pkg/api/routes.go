@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/isnastish/openai/pkg/api/models"
@@ -24,8 +25,10 @@ import (
 // exposes.
 
 func (a *App) OpenaAIRoute(ctx *fiber.Ctx) error {
-	// NOTE: This route should be protected
+	// NOTE: This route should be protected.
 	// We should validate the token received from the client
+	// The token should probably be retrieved from authorization header.
+
 	reqBody := ctx.Request().Body()
 
 	var reqData models.OpenAIRequest
@@ -48,10 +51,24 @@ func (a *App) OpenaAIRoute(ctx *fiber.Ctx) error {
 }
 
 func (a *App) RefreshCookieRoute(ctx *fiber.Ctx) error {
+	refreshToken := ctx.Cookies(a.auth.CookieName)
+	if refreshToken == "" {
+		return fiber.NewError(fiber.StatusInternalServerError, "cookie is not set")
+	}
+
+	// If the signature check passes we could trust the signed data.
+	var claims models.Claims
+	jwt.ParseWithClaims(refreshToken, claims, func(token *jwt.Token) (interface{}, error) {
+		// Verify the signing method
+		// return a single secret we trust
+		return []byte(a.auth.JwtSecret), nil
+	})
+
 	// cookieRefreshToken := ctx.Cookies(cookieName)
 	// if cookieRefreshToken != "" {
 	// 	fmt.Printf("Cookie value: %s\n", cookieRefreshToken)
 	// }
+
 	return nil
 }
 
