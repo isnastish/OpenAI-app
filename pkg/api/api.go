@@ -79,9 +79,6 @@ func NewApp(port int /*TODO: pass a secret */) (*App, error) {
 	app.fiberApp.Post("/login", app.LoginRoute)
 	app.fiberApp.Get("/logout", app.LogoutRoute)
 	app.fiberApp.Put("/openai", app.OpenaAIRoute)
-
-	// NOTE: This route should be invoked by the client what its time
-	// to refresh the token.
 	app.fiberApp.Get("/refresh-token", app.RefreshCookieRoute)
 
 	return app, nil

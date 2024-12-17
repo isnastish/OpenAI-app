@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -24,10 +25,47 @@ import (
 // This is a controller which contains all the routes that an application
 // exposes.
 
+// IMPORTANT:
+// Whenever the user wants to access a protected route or resource,
+// the user agent should send the JWT,
+// typically in the Authorization header using the Bearer schema.
+// The content of the header should look like the following:
+// Authorization: Bearer <token>
+
 func (a *App) OpenaAIRoute(ctx *fiber.Ctx) error {
 	// NOTE: This route should be protected.
 	// We should validate the token received from the client
 	// The token should probably be retrieved from authorization header.
+	// We are passing the refresh token, and doing the validation on a refresh token as well.
+
+	authorizationHeader := ctx.GetRespHeader("authorization")
+	if authorizationHeader == "" {
+		return fiber.NewError(fiber.StatusUnauthorized, "authorization header missing")
+	}
+
+	headerParts := strings.Split(authorizationHeader, " ")
+	if len(headerParts) != 2 {
+		return fiber.NewError(fiber.StatusUnauthorized, "authorization token is not set")
+	}
+
+	if strings.ToLower(headerParts[0]) != "bearer" {
+		return fiber.NewError(fiber.StatusUnauthorized, "Bearer schema missing")
+	}
+
+	claims := models.Claims{}
+	_, err := jwt.ParseWithClaims(headerParts[1], claims, func(token *jwt.Token) (interface{}, error) {
+		// Validate the signing algorithm
+
+		// return secret
+		return []byte(a.auth.JwtSecret), nil
+	})
+
+	// NOTE: This checks whether a token has expired as well.
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "failed to validate token")
+	}
+
+	// Now we should validate the json web token.
 
 	reqBody := ctx.Request().Body()
 
