@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/isnastish/openai/pkg/api/models"
@@ -24,8 +25,10 @@ import (
 // exposes.
 
 func (a *App) OpenaAIRoute(ctx *fiber.Ctx) error {
-	// NOTE: This route should be protected
+	// NOTE: This route should be protected.
 	// We should validate the token received from the client
+	// The token should probably be retrieved from authorization header.
+
 	reqBody := ctx.Request().Body()
 
 	var reqData models.OpenAIRequest
@@ -48,11 +51,79 @@ func (a *App) OpenaAIRoute(ctx *fiber.Ctx) error {
 }
 
 func (a *App) RefreshCookieRoute(ctx *fiber.Ctx) error {
-	// cookieRefreshToken := ctx.Cookies(cookieName)
-	// if cookieRefreshToken != "" {
-	// 	fmt.Printf("Cookie value: %s\n", cookieRefreshToken)
-	// }
-	return nil
+	refreshToken := ctx.Cookies(a.auth.CookieName)
+	if refreshToken == "" {
+		return fiber.NewError(fiber.StatusInternalServerError, "cookie is not set")
+	}
+
+	// TODO: This whole token validation process should be moved into a separte function,
+	// inside an auth package.
+
+	// NOTE: We should refresh the token a bit before it will be expired,
+	// not after, the only problem is how to do that on the cline side.
+
+	// If the signature check passes we could trust the signed data.
+	claims := &models.Claims{}
+	token, err := jwt.ParseWithClaims(refreshToken, claims, func(token *jwt.Token) (interface{}, error) {
+		// NOTE: This might not work out.
+		// tokenClaims := token.Claims.(*models.Claims)
+		// Verify the signing method
+		// return a single secret we trust
+		return []byte(a.auth.JwtSecret), nil
+	})
+
+	if err != nil {
+		// TODO: Include error message?
+		return fiber.NewError(fiber.StatusUnauthorized, "unauthorized")
+	}
+
+	_ = token
+
+	// This should never fail if we refresh the token a little bit before it expires.
+	if claims.ExpiresAt == nil || time.Now().After(claims.ExpiresAt.Time) {
+		return fiber.NewError(fiber.StatusUnauthorized, "token has expired")
+	}
+
+	// NOTE: claims.Subject will contain a user ID (but in our case for now it's an email address),
+	// We should retrive that email address and make a lookup in a database, whether such user
+	// exists, and what's more important the token is not expired.
+
+	// This should probably be a use ID.
+	userEmail := claims.Subject
+
+	dbCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	user, err := a.dbController.GetUserByEmail(dbCtx, userEmail)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError)
+	}
+
+	if user == nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "unknown user")
+	}
+
+	tokenPair, err := a.auth.GetTokenPair(user.Email)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	// Create a cookie with a new refresh token and set it.
+	cookie := a.auth.GetCookie(tokenPair.RefreshToken)
+
+	// Set an actual cookie
+	ctx.Cookie(&fiber.Cookie{
+		Name:     cookie.Name,
+		Value:    cookie.Value,
+		Path:     cookie.Path,
+		Expires:  cookie.Expires,
+		MaxAge:   cookie.MaxAge,
+		HTTPOnly: true, // javascript won't have access to this cookie in a web-browser
+		Secure:   true,
+		SameSite: fiber.CookieSameSiteStrictMode,
+	})
+
+	return ctx.JSON(tokenPair, "application/json")
 }
 
 func (a *App) LoginRoute(ctx *fiber.Ctx) error {
@@ -94,7 +165,7 @@ func (a *App) LoginRoute(ctx *fiber.Ctx) error {
 		}
 	}
 
-	tokenPair, err := a.auth.GetTokenPair(userData.Email, userData.Password)
+	tokenPair, err := a.auth.GetTokenPair(userData.Email)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError)
 	}
