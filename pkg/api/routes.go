@@ -226,7 +226,7 @@ func (a *App) SignupRoute(ctx *fiber.Ctx) error {
 
 	// NOTE: Probably internal server error is not the best way of doing this.
 	// We should return 409 -> Conflict, or so.
-	if user == nil {
+	if user != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("user with email: %s already exists", userData.Email))
 	}
 
