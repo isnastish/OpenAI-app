@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -33,40 +32,6 @@ import (
 // Authorization: Bearer <token>
 
 func (a *App) OpenaAIRoute(ctx *fiber.Ctx) error {
-	// NOTE: This route should be protected.
-	// We should validate the token received from the client
-	// The token should probably be retrieved from authorization header.
-	// We are passing the refresh token, and doing the validation on a refresh token as well.
-
-	authorizationHeader := ctx.GetRespHeader("authorization")
-	if authorizationHeader == "" {
-		return fiber.NewError(fiber.StatusUnauthorized, "authorization header missing")
-	}
-
-	headerParts := strings.Split(authorizationHeader, " ")
-	if len(headerParts) != 2 {
-		return fiber.NewError(fiber.StatusUnauthorized, "authorization token is not set")
-	}
-
-	if strings.ToLower(headerParts[0]) != "bearer" {
-		return fiber.NewError(fiber.StatusUnauthorized, "Bearer schema missing")
-	}
-
-	claims := models.Claims{}
-	_, err := jwt.ParseWithClaims(headerParts[1], claims, func(token *jwt.Token) (interface{}, error) {
-		// Validate the signing algorithm
-
-		// return secret
-		return []byte(a.auth.JwtSecret), nil
-	})
-
-	// NOTE: This checks whether a token has expired as well.
-	if err != nil {
-		return fiber.NewError(fiber.StatusUnauthorized, "failed to validate token")
-	}
-
-	// Now we should validate the json web token.
-
 	reqBody := ctx.Request().Body()
 
 	var reqData models.OpenAIRequest
@@ -245,20 +210,25 @@ func (a *App) LogoutRoute(ctx *fiber.Ctx) error {
 func (a *App) SignupRoute(ctx *fiber.Ctx) error {
 	var userData models.UserData
 	if err := json.Unmarshal(ctx.Body(), &userData); err != nil {
+		log.Logger.Info("failed to unmarshal request body: error %v", err)
 		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("failed to unmarshal request body, error: %v", err))
 	}
+
+	log.Logger.Info("user data: %v", userData)
 
 	dbCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	exists, err := a.dbController.HasUser(dbCtx, userData.Email)
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
-	}
+	// user, err := a.dbController.GetUserByEmail(dbCtx, userData.Email)
+	// if err != nil {
+	// 	return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	// }
 
-	if exists {
-		return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("user with email: %s already exists", userData.Email))
-	}
+	// // NOTE: Probably internal server error is not the best way of doing this.
+	// // We should return 409 -> Conflict, or so.
+	// if user == nil {
+	// 	return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("user with email: %s already exists", userData.Email))
+	// }
 
 	// Get IP addresses in X-Forwarded-For header
 	var ipAddr string
@@ -281,6 +251,5 @@ func (a *App) SignupRoute(ctx *fiber.Ctx) error {
 
 	log.Logger.Info("Successfully added user to the database")
 
-	// TODO: Make sure that the user doesn't exist
-	return fiber.NewError(fiber.StatusNotImplemented, "")
+	return ctx.SendStatus(fiber.StatusOK)
 }

@@ -3,8 +3,8 @@ package models
 import "github.com/golang-jwt/jwt/v5"
 
 type Claims struct {
-	Email    string `json:"email"`
-	Password string `json:"pwd"`
+	// TODO: We should use user ID instead of email address.
+	Email string `json:"email"`
 	jwt.RegisteredClaims
 }
 

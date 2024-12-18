@@ -78,8 +78,18 @@ func NewApp(port int /*TODO: pass a secret */) (*App, error) {
 	app.fiberApp.Post("/signup", app.SignupRoute)
 	app.fiberApp.Post("/login", app.LoginRoute)
 	app.fiberApp.Get("/logout", app.LogoutRoute)
-	app.fiberApp.Put("/openai", app.OpenaAIRoute)
 	app.fiberApp.Get("/refresh-token", app.RefreshCookieRoute)
+
+	// NOTE: This route should be accessed only if the authentication passes.
+	app.fiberApp.Put("/protected/openai", app.OpenaAIRoute)
+
+	// We need to apply auth middleware only to certain routes.
+	// The middleware would be invoked only for routes starting with openai
+	app.fiberApp.Use("/protected", func(ctx *fiber.Ctx) error {
+		log.Logger.Info("auth middleware is invoked")
+		return ctx.Next()
+		// return app.AuthMiddleware(ctx)
+	})
 
 	return app, nil
 }

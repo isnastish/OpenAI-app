@@ -6,11 +6,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/jackc/pgx"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/isnastish/openai/pkg/api/models"
-	hashutils "github.com/isnastish/openai/pkg/hash_utils"
 	"github.com/isnastish/openai/pkg/log"
 )
 
@@ -96,7 +96,16 @@ func (pc *PostgresController) AddUser(ctx context.Context, userData *models.User
 		"country", "city", "country_code"
 	) values ($1, $2, $3, $4, $5, $6, $7);`
 
-	hashedPassword := hashutils.NewSha256([]byte(userData.Password))
+	// TODO: Use salt appended to the password and hash it all together.
+	// Read up more about salt:
+	// https://en.wikipedia.org/wiki/Salt_(cryptography)
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userData.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("postgres: failed to encrypt password, error: %v", err)
+	}
+
+	log.Logger.Info("Encrypted password: %s", hashedPassword)
 
 	if _, err := conn.Exec(ctx, query, userData.FirstName, userData.LastName,
 		userData.Email, hashedPassword, geolocationData.Country, geolocationData.City, geolocationData.CountryCode); err != nil {
@@ -104,28 +113,6 @@ func (pc *PostgresController) AddUser(ctx context.Context, userData *models.User
 	}
 
 	return nil
-}
-
-func (pc *PostgresController) HasUser(ctx context.Context, email string) (bool, error) {
-	conn, err := pc.connPool.Acquire(ctx)
-	if err != nil {
-		return false, fmt.Errorf("postgres: failed to acquire database connection, error: %v", err)
-	}
-
-	defer conn.Release()
-
-	query := `SELECT "email" FROM "users" WHERE "email" = ($1);`
-	row := conn.QueryRow(ctx, query, email)
-
-	var result string
-	if err := row.Scan(&result); err != nil {
-		if err == pgx.ErrNoRows {
-			return false, nil
-		}
-		return false, fmt.Errorf("postgres: failed to select user, error: %v", err)
-	}
-
-	return true, nil
 }
 
 func (pc *PostgresController) GetUserByEmail(ctx context.Context, email string) (*models.UserData, error) {
@@ -140,17 +127,35 @@ func (pc *PostgresController) GetUserByEmail(ctx context.Context, email string) 
 	"first_name", "last_name", "email", "password", "country", "city"
 	FROM "users" WHERE "email" = ($1);`
 
-	row := conn.QueryRow(ctx, query, email)
-
-	var userData models.UserData
-	if err := row.Scan(&userData); err != nil {
-		if err == pgx.ErrNoRows {
-			// User with provided email address doesn't exist
-			return nil, nil
-		}
+	rows, _ := conn.Query(ctx, query, email)
+	users, err := pgx.CollectRows(rows, pgx.RowToStructByName[models.UserData])
+	if err != nil {
 		return nil, fmt.Errorf("postgres: failed to select user, error: %v", err)
 	}
-	return &userData, nil
+
+	// User doesn't exist
+	if len(users) == 0 {
+		return nil, nil
+	}
+
+	// TODO: We have a strage situation here,
+	// when the error is `no rows in result set` which is equivalent
+	// to ErrNoRows, but errors.Is(...) returns false for some reason.
+	// So, the function doesn't perform as it should.
+
+	// var userData models.UserData
+	// if err := row.Scan(&userData); err != nil {
+	// 	log.Logger.Info("user data: %v, error: %v", userData, err)
+	// 	switch {
+	// 	case errors.Is(err, pgx.ErrNoRows):
+	// 		return nil, nil
+	// 	default:
+	// 		log.Logger.Info("Default case: %s", pgx.ErrNoRows.Error())
+	// 		return nil, fmt.Errorf("postgres: failed to select user, error: %v", err)
+	// 	}
+	// }
+
+	return &users[0], nil
 }
 
 func (pc *PostgresController) GetUserByID(ctx context.Context, id int) (*models.UserData, error) {
