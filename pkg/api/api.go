@@ -81,7 +81,7 @@ func NewApp(port int /*TODO: pass a secret */) (*App, error) {
 	app.fiberApp.Get("/refresh-token", app.RefreshCookieRoute)
 
 	// NOTE: This route should be accessed only if the authentication passes.
-	app.fiberApp.Put("/protected/openai", app.OpenaAIRoute)
+	app.fiberApp.Post("/protected/openai", app.OpenaAIRoute)
 
 	// We need to apply auth middleware only to certain routes.
 	// The middleware would be invoked only for routes starting with openai
