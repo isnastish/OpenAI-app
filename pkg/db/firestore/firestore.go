@@ -57,10 +57,6 @@ func (fc *FirestoreController) AddUser(ctx context.Context, userData *models.Use
 	return nil
 }
 
-func (fc *FirestoreController) HasUser(ctx context.Context, email string) (bool, error) {
-	return false, nil
-}
-
 func (fc *FirestoreController) GetUserByEmail(ctx context.Context, email string) (*models.UserData, error) {
 	return nil, nil
 }

@@ -23,6 +23,7 @@ type Cookie struct {
 
 type AuthManager struct {
 	CookieName      string
+	DefaultIssuer   string
 	AccessTokenTTL  time.Duration
 	RefreshTokenTTL time.Duration
 	JwtSecret       []byte
@@ -31,6 +32,7 @@ type AuthManager struct {
 func NewAuthManager(secret []byte) *AuthManager {
 	return &AuthManager{
 		CookieName:      "__Host-refresh_token",
+		DefaultIssuer:   "openai-server",
 		AccessTokenTTL:  time.Minute * 15,
 		RefreshTokenTTL: time.Hour * 24,
 		JwtSecret:       secret,
@@ -46,8 +48,9 @@ func (a *AuthManager) GetTokenPair(userEmail string) (*models.TokenPair, error) 
 				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 15)),
 				IssuedAt:  jwt.NewNumericDate(time.Now()),
 				NotBefore: jwt.NewNumericDate(time.Now()),
-				Issuer:    "openai-server",
+				Issuer:    a.DefaultIssuer,
 				// Subject:   "",
+				// NOTE: Probably ID is not necessary as well.
 				ID:       "1",
 				Audience: []string{"openai-frontend"},
 			},

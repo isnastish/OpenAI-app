@@ -24,11 +24,14 @@ import (
 // This is a controller which contains all the routes that an application
 // exposes.
 
-func (a *App) OpenaAIRoute(ctx *fiber.Ctx) error {
-	// NOTE: This route should be protected.
-	// We should validate the token received from the client
-	// The token should probably be retrieved from authorization header.
+// IMPORTANT:
+// Whenever the user wants to access a protected route or resource,
+// the user agent should send the JWT,
+// typically in the Authorization header using the Bearer schema.
+// The content of the header should look like the following:
+// Authorization: Bearer <token>
 
+func (a *App) OpenaAIRoute(ctx *fiber.Ctx) error {
 	reqBody := ctx.Request().Body()
 
 	var reqData models.OpenAIRequest
@@ -207,18 +210,23 @@ func (a *App) LogoutRoute(ctx *fiber.Ctx) error {
 func (a *App) SignupRoute(ctx *fiber.Ctx) error {
 	var userData models.UserData
 	if err := json.Unmarshal(ctx.Body(), &userData); err != nil {
+		log.Logger.Info("failed to unmarshal request body: error %v", err)
 		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("failed to unmarshal request body, error: %v", err))
 	}
+
+	log.Logger.Info("user data: %v", userData)
 
 	dbCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	exists, err := a.dbController.HasUser(dbCtx, userData.Email)
+	user, err := a.dbController.GetUserByEmail(dbCtx, userData.Email)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	if exists {
+	// NOTE: Probably internal server error is not the best way of doing this.
+	// We should return 409 -> Conflict, or so.
+	if user == nil {
 		return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("user with email: %s already exists", userData.Email))
 	}
 
@@ -243,6 +251,5 @@ func (a *App) SignupRoute(ctx *fiber.Ctx) error {
 
 	log.Logger.Info("Successfully added user to the database")
 
-	// TODO: Make sure that the user doesn't exist
-	return fiber.NewError(fiber.StatusNotImplemented, "")
+	return ctx.SendStatus(fiber.StatusOK)
 }
