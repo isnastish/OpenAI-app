@@ -219,16 +219,16 @@ func (a *App) SignupRoute(ctx *fiber.Ctx) error {
 	dbCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	// user, err := a.dbController.GetUserByEmail(dbCtx, userData.Email)
-	// if err != nil {
-	// 	return fiber.NewError(fiber.StatusInternalServerError, err.Error())
-	// }
+	user, err := a.dbController.GetUserByEmail(dbCtx, userData.Email)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
 
-	// // NOTE: Probably internal server error is not the best way of doing this.
-	// // We should return 409 -> Conflict, or so.
-	// if user == nil {
-	// 	return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("user with email: %s already exists", userData.Email))
-	// }
+	// NOTE: Probably internal server error is not the best way of doing this.
+	// We should return 409 -> Conflict, or so.
+	if user == nil {
+		return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("user with email: %s already exists", userData.Email))
+	}
 
 	// Get IP addresses in X-Forwarded-For header
 	var ipAddr string

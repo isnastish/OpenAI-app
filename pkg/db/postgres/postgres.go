@@ -138,29 +138,14 @@ func (pc *PostgresController) GetUserByEmail(ctx context.Context, email string) 
 		return nil, nil
 	}
 
-	// TODO: We have a strage situation here,
-	// when the error is `no rows in result set` which is equivalent
-	// to ErrNoRows, but errors.Is(...) returns false for some reason.
-	// So, the function doesn't perform as it should.
-
-	// var userData models.UserData
-	// if err := row.Scan(&userData); err != nil {
-	// 	log.Logger.Info("user data: %v, error: %v", userData, err)
-	// 	switch {
-	// 	case errors.Is(err, pgx.ErrNoRows):
-	// 		return nil, nil
-	// 	default:
-	// 		log.Logger.Info("Default case: %s", pgx.ErrNoRows.Error())
-	// 		return nil, fmt.Errorf("postgres: failed to select user, error: %v", err)
-	// 	}
-	// }
+	log.Logger.Info("Matched user: %v", users[0])
 
 	return &users[0], nil
 }
 
 func (pc *PostgresController) GetUserByID(ctx context.Context, id int) (*models.UserData, error) {
-	// NOTE: Use the same query but instead of email,
-	// use user ID.
+	// TODO: Not implemented yet. A user should be selected based on its ID,
+	// that is retrieved from refresh token, instead of email address.
 	return nil, nil
 }
 
