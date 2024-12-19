@@ -2,8 +2,10 @@ package auth
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/isnastish/openai/pkg/api/models"
 )
@@ -100,8 +102,7 @@ func (a *AuthManager) GetCookie(cookieValue string) *Cookie {
 	}
 }
 
-// NOTE: Should we parse the authorization header here as well?
-func (a *AuthManager) VerifyJWTToken(tokenString string) error {
+func (a *AuthManager) ValidateJwtToken(tokenString string) error {
 	claims := models.Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, &claims, func(token *jwt.Token) (interface{}, error) {
 		// Validate the signing algorithm
@@ -137,4 +138,37 @@ func (a *AuthManager) VerifyJWTToken(tokenString string) error {
 	}
 
 	return nil
+}
+
+const headerPrefix = "Bearer "
+
+func getTokenFromHeader(ctx *fiber.Ctx) (*string, error) {
+	authHeaders, ok := ctx.GetReqHeaders()["Authorization"]
+	if !ok {
+		return nil, fiber.NewError(fiber.StatusUnauthorized, "authorization header missing")
+	}
+
+	for _, header := range authHeaders {
+		auth := strings.Clone(header)
+		if strings.HasPrefix(auth, headerPrefix) {
+			token := strings.TrimSpace(auth[len(headerPrefix):])
+			return &token, nil
+		}
+	}
+
+	return nil, fiber.NewError(fiber.StatusUnauthorized, "authorization header invalid")
+}
+
+func (a *AuthManager) AuthorizationMiddleware(ctx *fiber.Ctx) error {
+	tokenString, err := getTokenFromHeader(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = a.ValidateJwtToken(*tokenString)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, err.Error())
+	}
+
+	return ctx.Next()
 }
