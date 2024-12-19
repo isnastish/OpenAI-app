@@ -100,9 +100,6 @@ func (a *AuthManager) GetCookie(cookieValue string) *Cookie {
 	}
 }
 
-// TODO: Use this prefix instead to retrieve the token value.
-const headerPrefix = "Bearer "
-
 // NOTE: Should we parse the authorization header here as well?
 func (a *AuthManager) VerifyJWTToken(tokenString string) error {
 	claims := models.Claims{}

@@ -4,30 +4,38 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/isnastish/openai/pkg/log"
 )
 
+// TODO: This has to be moved into auth package.
+// Presumably, we can move the whole `authMiddleware` logic there.
+// Regarding cors, we could specify those somewhere else using fiber.config.
+// and get rid of middleware.go file.
+const headerPrefix = "Bearer "
+
+func getTokenFromHeader(ctx *fiber.Ctx) (*string, error) {
+	authHeaders, ok := ctx.GetReqHeaders()["Authorization"]
+	if !ok {
+		return nil, fiber.NewError(fiber.StatusUnauthorized, "authorization header missing")
+	}
+
+	for _, header := range authHeaders {
+		auth := strings.Clone(header)
+		if strings.HasPrefix(auth, headerPrefix) {
+			token := strings.TrimSpace(auth[len(headerPrefix):])
+			return &token, nil
+		}
+	}
+
+	return nil, fiber.NewError(fiber.StatusUnauthorized, "authorization header invalid")
+}
+
 func (a *App) AuthMiddleware(ctx *fiber.Ctx) error {
-	authorizationHeader := ctx.GetRespHeader("authorization")
-	if authorizationHeader == "" {
-		return fiber.NewError(fiber.StatusUnauthorized, "authorization header missing")
+	tokenString, err := getTokenFromHeader(ctx)
+	if err != nil {
+		return err
 	}
 
-	headerParts := strings.Split(authorizationHeader, " ")
-	if len(headerParts) != 2 {
-		return fiber.NewError(fiber.StatusUnauthorized, "authorization token is not set")
-	}
-
-	if strings.ToLower(headerParts[0]) != "bearer" {
-		return fiber.NewError(fiber.StatusUnauthorized, "Bearer schema missing")
-	}
-
-	tokenString := headerParts[1]
-
-	// NOTE: Only for debugging and should be removed.
-	log.Logger.Info("Jwt token: %s", tokenString)
-
-	err := a.auth.VerifyJWTToken(tokenString)
+	err = a.auth.VerifyJWTToken(*tokenString)
 	if err != nil {
 		return fiber.NewError(fiber.StatusUnauthorized, err.Error())
 	}
