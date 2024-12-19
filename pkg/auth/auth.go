@@ -99,3 +99,46 @@ func (a *AuthManager) GetCookie(cookieValue string) *Cookie {
 		MaxAge:  int(a.RefreshTokenTTL.Seconds()),
 	}
 }
+
+// TODO: Use this prefix instead to retrieve the token value.
+const headerPrefix = "Bearer "
+
+// NOTE: Should we parse the authorization header here as well?
+func (a *AuthManager) VerifyJWTToken(tokenString string) error {
+	claims := models.Claims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		// Validate the signing algorithm
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			// NOTE: `alg` key contains a signing method used to sign the JWT token.
+			return nil, fmt.Errorf("unexpected signing method: %s", token.Header["alg"])
+		}
+
+		tokenClaims := token.Claims.(*models.Claims)
+		if tokenClaims.ExpiresAt == nil || time.Now().After(tokenClaims.ExpiresAt.Time) {
+			return nil, fmt.Errorf("jwt token is expired")
+		}
+
+		issuer, err := tokenClaims.GetIssuer()
+		if err != nil {
+			return nil, fmt.Errorf("jwt token invlaid, excepted an issuer")
+		}
+
+		if issuer != a.DefaultIssuer {
+			return nil, fmt.Errorf("jwt token invalid, wrong issuer")
+		}
+
+		// return secret
+		return []byte(a.JwtSecret), nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	if !token.Valid {
+		return fmt.Errorf("jwt token is invalid")
+
+	}
+
+	return nil
+}

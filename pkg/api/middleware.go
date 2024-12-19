@@ -1,20 +1,12 @@
 package api
 
 import (
-	"fmt"
 	"strings"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/golang-jwt/jwt/v5"
-	"github.com/isnastish/openai/pkg/api/models"
+	"github.com/isnastish/openai/pkg/log"
 )
 
-// TODO: Use this prefix instead to retrieve the token value.
-const headerPrefix = "Bearer "
-
-// TODO: All these logic should be moved into a separate function,
-// probably in auth package.
 func (a *App) AuthMiddleware(ctx *fiber.Ctx) error {
 	authorizationHeader := ctx.GetRespHeader("authorization")
 	if authorizationHeader == "" {
@@ -30,36 +22,14 @@ func (a *App) AuthMiddleware(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusUnauthorized, "Bearer schema missing")
 	}
 
-	claims := models.Claims{}
-	_, err := jwt.ParseWithClaims(headerParts[1], claims, func(token *jwt.Token) (interface{}, error) {
-		// Validate the signing algorithm
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			// NOTE: `alg` key contains a signing method used to sign the JWT token.
-			return nil, fmt.Errorf("unexpected signing method: %s", token.Header["alg"])
-		}
+	tokenString := headerParts[1]
 
-		tokenClaims := token.Claims.(*models.Claims)
-		if tokenClaims.ExpiresAt == nil || time.Now().After(tokenClaims.ExpiresAt.Time) {
-			return nil, fmt.Errorf("jwt token is expired")
-		}
+	// NOTE: Only for debugging and should be removed.
+	log.Logger.Info("Jwt token: %s", tokenString)
 
-		issuer, err := tokenClaims.GetIssuer()
-		if err != nil {
-			return nil, fmt.Errorf("jwt token invlaid, excepted an issuer")
-		}
-
-		// TODO: We have to make sure that an issuer is the same.
-		if issuer != a.auth.DefaultIssuer {
-			return nil, fmt.Errorf("jwt token invalid, wrong issuer")
-		}
-
-		// return secret
-		return []byte(a.auth.JwtSecret), nil
-	})
-
-	// NOTE: This checks whether a token has expired as well.
+	err := a.auth.VerifyJWTToken(tokenString)
 	if err != nil {
-		return fiber.NewError(fiber.StatusUnauthorized, "failed to validate token")
+		return fiber.NewError(fiber.StatusUnauthorized, err.Error())
 	}
 
 	return ctx.Next()

@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -143,10 +144,33 @@ func (pc *PostgresController) GetUserByEmail(ctx context.Context, email string) 
 	return &users[0], nil
 }
 
+// NOTE: This method will be used when a refresh token contains an issuer.
+// TODO: This has to be tested properly.
 func (pc *PostgresController) GetUserByID(ctx context.Context, id int) (*models.UserData, error) {
-	// TODO: Not implemented yet. A user should be selected based on its ID,
-	// that is retrieved from refresh token, instead of email address.
-	return nil, nil
+	conn, err := pc.connPool.Acquire(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("postgres: failed to acquire database connection, error: %v", err)
+	}
+
+	defer conn.Release()
+
+	query := `SELECT 
+	"first_name", "last_name", "email", "password", 
+	"country", "city" FROM "users" WHERE "id" = ($1);`
+
+	rows, _ := conn.Query(ctx, query, id)
+	user, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[models.UserData])
+	if err != nil {
+		switch {
+		case errors.Is(err, pgx.ErrNoRows):
+			// User doesn't exist
+			return nil, nil
+		default:
+			return nil, fmt.Errorf("postgres: failed to collect rows, error: %v", user)
+		}
+	}
+
+	return &user, nil
 }
 
 func (pc *PostgresController) Close() error {
