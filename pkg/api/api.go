@@ -87,8 +87,7 @@ func NewApp(port int /*TODO: pass a secret */) (*App, error) {
 	// The middleware would be invoked only for routes starting with openai
 	app.fiberApp.Use("/protected", func(ctx *fiber.Ctx) error {
 		log.Logger.Info("auth middleware is invoked")
-		return ctx.Next()
-		// return app.AuthMiddleware(ctx)
+		return app.AuthMiddleware(ctx)
 	})
 
 	return app, nil
