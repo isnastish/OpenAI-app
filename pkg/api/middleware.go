@@ -1,49 +1,8 @@
 package api
 
 import (
-	"strings"
-
 	"github.com/gofiber/fiber/v2"
 )
-
-// TODO: Introduce a flag to skip authorization.
-
-// TODO: This has to be moved into auth package.
-// Presumably, we can move the whole `authMiddleware` logic there.
-// Regarding cors, we could specify those somewhere else using fiber.config.
-// and get rid of middleware.go file.
-const headerPrefix = "Bearer "
-
-func getTokenFromHeader(ctx *fiber.Ctx) (*string, error) {
-	authHeaders, ok := ctx.GetReqHeaders()["Authorization"]
-	if !ok {
-		return nil, fiber.NewError(fiber.StatusUnauthorized, "authorization header missing")
-	}
-
-	for _, header := range authHeaders {
-		auth := strings.Clone(header)
-		if strings.HasPrefix(auth, headerPrefix) {
-			token := strings.TrimSpace(auth[len(headerPrefix):])
-			return &token, nil
-		}
-	}
-
-	return nil, fiber.NewError(fiber.StatusUnauthorized, "authorization header invalid")
-}
-
-func (a *App) AuthMiddleware(ctx *fiber.Ctx) error {
-	tokenString, err := getTokenFromHeader(ctx)
-	if err != nil {
-		return err
-	}
-
-	err = a.auth.VerifyJWTToken(*tokenString)
-	if err != nil {
-		return fiber.NewError(fiber.StatusUnauthorized, err.Error())
-	}
-
-	return ctx.Next()
-}
 
 // NOTE: Fiber supports cors config, so use that instead
 // We can use cors.New(fiber.config{}) directly in the app class
