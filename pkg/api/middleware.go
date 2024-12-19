@@ -6,6 +6,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+// TODO: Introduce a flag to skip authorization.
+
 // TODO: This has to be moved into auth package.
 // Presumably, we can move the whole `authMiddleware` logic there.
 // Regarding cors, we could specify those somewhere else using fiber.config.
