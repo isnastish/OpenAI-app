@@ -100,13 +100,10 @@ func (a *AuthManager) GetCookie(cookieValue string) *Cookie {
 	}
 }
 
-// TODO: Use this prefix instead to retrieve the token value.
-const headerPrefix = "Bearer "
-
 // NOTE: Should we parse the authorization header here as well?
 func (a *AuthManager) VerifyJWTToken(tokenString string) error {
 	claims := models.Claims{}
-	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &claims, func(token *jwt.Token) (interface{}, error) {
 		// Validate the signing algorithm
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			// NOTE: `alg` key contains a signing method used to sign the JWT token.
