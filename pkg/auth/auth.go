@@ -137,7 +137,6 @@ func (a *AuthManager) VerifyJWTToken(tokenString string) error {
 
 	if !token.Valid {
 		return fmt.Errorf("jwt token is invalid")
-
 	}
 
 	return nil

@@ -30,7 +30,9 @@ func NewClient() (*Client, error) {
 }
 
 // TODO: This should be rewritten in a more understandable way
-// And the function should be renamed
+// And the function should be renamed.
+// NOTE: This context will need more time, because requests to openai model
+// might require some processing, data accumulation, etc.
 func (c *Client) AskOpenAI(ctx context.Context, message string) (*models.OpenAIResp, error) {
 	messages := []map[string]string{
 		{

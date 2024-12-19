@@ -39,7 +39,7 @@ func (a *App) OpenaAIRoute(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Failed to unmarshal request body")
 	}
 
-	reqCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	reqCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
 	resp, err := a.openaiClient.AskOpenAI(reqCtx, reqData.OpenaiQuestion)
