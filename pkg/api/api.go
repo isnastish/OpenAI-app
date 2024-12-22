@@ -54,6 +54,7 @@ func NewApp(port int /*TODO: pass a secret */) (*App, error) {
 		return nil, err
 	}
 
+	accessTokenTTL := time.Minute * 15
 	app := &App{
 		fiberApp: fiber.New(fiber.Config{
 			// TODO: Figure out the prefork parameter.
@@ -63,7 +64,7 @@ func NewApp(port int /*TODO: pass a secret */) (*App, error) {
 		}),
 		openaiClient:     openaiClient,
 		ipResolverClient: ipResolverClient,
-		auth:             auth.NewAuthManager([]byte("my-dummy-secret")),
+		auth:             auth.NewAuthManager([]byte("my-dummy-secret"), accessTokenTTL),
 		dbController:     dbContoller,
 		port:             port}
 
