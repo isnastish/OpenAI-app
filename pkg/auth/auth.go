@@ -10,9 +10,8 @@ import (
 	"github.com/isnastish/openai/pkg/api/models"
 )
 
-// NOTE: The subject claim usually identifies one of the parties
-// to another (could be user IDs or emails)
-// Validation - is the process of checking token's signature.
+// NOTE: Why the logic for validating a refresh token and jwt token should
+// be different?
 
 type Cookie struct {
 	Name    string
@@ -31,12 +30,12 @@ type AuthManager struct {
 	JwtSecret       []byte
 }
 
-func NewAuthManager(secret []byte) *AuthManager {
+func NewAuthManager(secret []byte, accessTokenTTL time.Duration) *AuthManager {
 	return &AuthManager{
-		CookieName:      "__Host-refresh_token",
+		CookieName:      "__refresh_token",
 		DefaultIssuer:   "openai-server",
-		AccessTokenTTL:  time.Minute * 15,
-		RefreshTokenTTL: time.Hour * 24,
+		AccessTokenTTL:  accessTokenTTL,
+		RefreshTokenTTL: time.Hour * 48,
 		JwtSecret:       secret,
 	}
 }
@@ -44,25 +43,18 @@ func NewAuthManager(secret []byte) *AuthManager {
 func (a *AuthManager) GetTokenPair(userEmail string) (*models.TokenPair, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		&models.Claims{
-			// NOTE: There is no need to make the password be a part of claims
 			Email: userEmail,
 			RegisteredClaims: jwt.RegisteredClaims{
-				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 15)),
+				ExpiresAt: jwt.NewNumericDate(time.Now().Add(a.AccessTokenTTL)),
 				IssuedAt:  jwt.NewNumericDate(time.Now()),
 				NotBefore: jwt.NewNumericDate(time.Now()),
 				Issuer:    a.DefaultIssuer,
-				// Subject:   "",
-				// NOTE: Probably ID is not necessary as well.
-				ID:       "1",
-				Audience: []string{"openai-frontend"},
 			},
 		})
 
-	// TODO: Sign a token using a secret key,
-	// ideally it should be a private key.
 	signedAccessToken, err := token.SignedString(a.JwtSecret)
 	if err != nil {
-		return nil, fmt.Errorf("failed to sign access token: %v", err)
+		return nil, fmt.Errorf("auth: failed to sign access token: %v", err)
 	}
 
 	// create a new refresh token with claims
@@ -71,19 +63,16 @@ func (a *AuthManager) GetTokenPair(userEmail string) (*models.TokenPair, error) 
 		&models.Claims{
 			RegisteredClaims: jwt.RegisteredClaims{
 				// NOTE: Supposed to be a user ID in a database
-				Subject:  userEmail,
-				IssuedAt: jwt.NewNumericDate(time.Now()),
-				// NOTE: An expiration time for refresh token should be 24 hours,
-				// after that a user will be prompted to login again
+				Subject:   userEmail,
+				IssuedAt:  jwt.NewNumericDate(time.Now()),
 				ExpiresAt: jwt.NewNumericDate(time.Now().Add(a.RefreshTokenTTL)),
 			},
 		},
 	)
 
-	// Sign an access token using our secret key.
 	signedRefreshToken, err := refreshToken.SignedString(a.JwtSecret)
 	if err != nil {
-		return nil, fmt.Errorf("failed to sign a refresh token: %v", err)
+		return nil, fmt.Errorf("auth: failed to sign a refresh token: %v", err)
 	}
 
 	return &models.TokenPair{
@@ -105,9 +94,7 @@ func (a *AuthManager) GetCookie(cookieValue string) *Cookie {
 func (a *AuthManager) ValidateJwtToken(tokenString string) error {
 	claims := models.Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, &claims, func(token *jwt.Token) (interface{}, error) {
-		// Validate the signing algorithm
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			// NOTE: `alg` key contains a signing method used to sign the JWT token.
 			return nil, fmt.Errorf("unexpected signing method: %s", token.Header["alg"])
 		}
 
@@ -125,7 +112,6 @@ func (a *AuthManager) ValidateJwtToken(tokenString string) error {
 			return nil, fmt.Errorf("jwt token invalid, wrong issuer")
 		}
 
-		// return secret
 		return []byte(a.JwtSecret), nil
 	})
 
