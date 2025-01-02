@@ -53,21 +53,21 @@ func (a *App) OpenaAIRoute(ctx *fiber.Ctx) error {
 	}, "application/json")
 }
 
-func (a *App) RefreshCookieRoute(ctx *fiber.Ctx) error {
+func (a *App) RefreshTokensRoute(ctx *fiber.Ctx) error {
 	refreshToken := ctx.Cookies(a.auth.CookieName)
 	if refreshToken == "" {
 		return fiber.NewError(fiber.StatusInternalServerError, "cookie is not set")
 	}
 
-	// TODO: This whole token validation process should be moved into a separte function,
+	// TODO: This whole token validation process should be moved into a separate function,
 	// inside an auth package.
 
 	// NOTE: We should refresh the token a bit before it will be expired,
 	// not after, the only problem is how to do that on the cline side.
 
 	// If the signature check passes we could trust the signed data.
-	claims := &models.Claims{}
-	token, err := jwt.ParseWithClaims(refreshToken, claims, func(token *jwt.Token) (interface{}, error) {
+	claims := models.Claims{}
+	token, err := jwt.ParseWithClaims(refreshToken, &claims, func(token *jwt.Token) (interface{}, error) {
 		// NOTE: This might not work out.
 		// tokenClaims := token.Claims.(*models.Claims)
 		// Verify the signing method
@@ -193,6 +193,7 @@ func (a *App) LoginRoute(ctx *fiber.Ctx) error {
 }
 
 func (a *App) LogoutRoute(ctx *fiber.Ctx) error {
+	// Delete the cookie
 	ctx.Cookie(&fiber.Cookie{
 		Name:     a.auth.CookieName,
 		Value:    "",

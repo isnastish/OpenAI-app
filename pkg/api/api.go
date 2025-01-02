@@ -16,7 +16,6 @@ import (
 	"github.com/isnastish/openai/pkg/openai"
 )
 
-// TODO: This should probably be renamed to server instead of App
 type App struct {
 	// http server
 	fiberApp *fiber.App
@@ -85,7 +84,7 @@ func NewApp(port int /*TODO: pass a secret */) (*App, error) {
 	app.fiberApp.Post("/signup", app.SignupRoute)
 	app.fiberApp.Post("/login", app.LoginRoute)
 	app.fiberApp.Get("/logout", app.LogoutRoute)
-	app.fiberApp.Get("/refresh-token", app.RefreshCookieRoute)
+	app.fiberApp.Get("/refresh", app.RefreshTokensRoute)
 
 	// NOTE: This route should be accessed only if the authentication passes.
 	app.fiberApp.Post("/protected/openai", app.OpenaAIRoute)
