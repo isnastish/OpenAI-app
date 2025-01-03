@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
@@ -46,6 +47,7 @@ func (db *MondgodbController) AddUser(ctx context.Context, userData *models.User
 	// NOTE: Omit the geolocation data for now.
 	// And, we have to check whether a user with a specified email address already exists.
 	// TODO: Hash password together with a salt before adding to a collection.
+	// NOTE: We shouldn't keep uer's geolocation data in a database, it doesn't make sense.
 	result, err := db.collection.InsertOne(ctx, userData)
 	if err != nil {
 		return fmt.Errorf("mongodb: failed to add a new user, error: %v", err)
@@ -57,11 +59,22 @@ func (db *MondgodbController) AddUser(ctx context.Context, userData *models.User
 }
 
 func (db *MondgodbController) GetUserByEmail(ctx context.Context, email string) (*models.UserData, error) {
-	// db.collection.FindOne(ctx, )
-	return nil, nil
+	// NOTE: This might not work, since in example we decode into bson.M,
+	// which holds the result.id, but we could give it a try.
+	var result models.UserData
+	if err := db.collection.FindOne(ctx, bson.M{"email": email}).Decode(&result); err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, fmt.Errorf("mongodb: user with email %s is not found", email)
+		}
+		return nil, err
+	}
+
+	return &result, nil
 }
 
 func (db *MondgodbController) GetUserByID(ctx context.Context, id int) (*models.UserData, error) {
+	// TODO: We would have to reconsider this function since an id in mongo's collection
+	// is represented as a string.
 	return nil, nil
 }
 
