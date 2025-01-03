@@ -17,7 +17,7 @@ type FirestoreController struct {
 	dbClient *db.Client
 }
 
-func NewFirebaseController(ctx context.Context) (*FirestoreController, error) {
+func NewFirestoreController(ctx context.Context) (*FirestoreController, error) {
 	// TODO: Read about refresh-token credentials file
 	opt := option.WithCredentialsFile("path/to/refreshToken.json")
 	config := &firebase.Config{ProjectID: "my-project-id"}
@@ -44,9 +44,9 @@ func NewFirebaseController(ctx context.Context) (*FirestoreController, error) {
 	}, nil
 }
 
-func (fc *FirestoreController) AddUser(ctx context.Context, userData *models.UserData, geolocationData *models.GeolocationData) error {
+func (db *FirestoreController) AddUser(ctx context.Context, userData *models.UserData, geolocationData *models.GeolocationData) error {
 	// NOTE: This is a rough approximation of how this supposed to
-	usersRef := fc.dbClient.NewRef("/users")
+	usersRef := db.dbClient.NewRef("/users")
 	newUserRef, err := usersRef.Push(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("firestore: failed to create user ref, error: %v", err)
@@ -57,10 +57,14 @@ func (fc *FirestoreController) AddUser(ctx context.Context, userData *models.Use
 	return nil
 }
 
-func (fc *FirestoreController) GetUserByEmail(ctx context.Context, email string) (*models.UserData, error) {
+func (db *FirestoreController) GetUserByEmail(ctx context.Context, email string) (*models.UserData, error) {
 	return nil, nil
 }
 
-func (fc *FirestoreController) Close() error {
+func (db *FirestoreController) GetUserByID(ctx context.Context, id int) (*models.UserData, error) {
+	return nil, nil
+}
+
+func (db *FirestoreController) Close() error {
 	return nil
 }

@@ -12,9 +12,6 @@ import (
 	_ "github.com/isnastish/openai/pkg/log"
 )
 
-// TODO: Put all the environment variables into .env file and use
-// dotenv go package to retrieve all of them.
-
 type MondgodbController struct {
 	// TODO: Do we need to store a client?
 	collection *mongo.Collection
