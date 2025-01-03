@@ -12,7 +12,13 @@ import (
 	_ "github.com/isnastish/openai/pkg/log"
 )
 
+// TODO: Put all the environment variables into .env file and use
+// dotenv go package to retrieve all of them.
+
 type MondgodbController struct {
+	// TODO: Do we need to store a client?
+	collection *mongo.Collection
+	// mongodb client
 	client *mongo.Client
 }
 
@@ -27,8 +33,12 @@ func NewMongodbController(ctx context.Context) (*MondgodbController, error) {
 		return nil, fmt.Errorf("mongodb: failed to create mongodb client, error: %v", err)
 	}
 
+	// get users collection
+	usersCollection := client.Database("newdatabase").Collection("users")
+
 	return &MondgodbController{
-		client: client,
+		collection: usersCollection,
+		client:     client,
 	}, nil
 }
 
@@ -37,6 +47,7 @@ func (db *MondgodbController) AddUser(ctx context.Context, userData *models.User
 }
 
 func (db *MondgodbController) GetUserByEmail(ctx context.Context, email string) (*models.UserData, error) {
+	// db.collection.FindOne(ctx, )
 	return nil, nil
 }
 
