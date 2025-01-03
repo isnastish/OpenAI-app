@@ -48,7 +48,7 @@ func (db *MondgodbController) AddUser(ctx context.Context, userData *models.User
 	// TODO: Hash password together with a salt before adding to a collection.
 	result, err := db.collection.InsertOne(ctx, userData)
 	if err != nil {
-		return fmt.Errorf("mongodb: failed to add new user, error: %v", err)
+		return fmt.Errorf("mongodb: failed to add a new user, error: %v", err)
 	}
 
 	log.Logger.Info("Adder a new user with ID: %v", result.InsertedID)
