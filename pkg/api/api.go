@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -10,6 +11,8 @@ import (
 
 	"github.com/isnastish/openai/pkg/auth"
 	"github.com/isnastish/openai/pkg/db"
+	firebase "github.com/isnastish/openai/pkg/db/firestore"
+	"github.com/isnastish/openai/pkg/db/mongodb"
 	"github.com/isnastish/openai/pkg/db/postgres"
 	"github.com/isnastish/openai/pkg/ipresolver"
 	"github.com/isnastish/openai/pkg/log"
@@ -45,12 +48,36 @@ func NewApp(port int /*TODO: pass a secret */) (*App, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// NOTE: For now let's go with db controller,
-	// but we should select the contoller based on some env
-	// variable DATABASE_CONTROLLER, for example.
-	dbContoller, err := postgres.NewPostgresController(ctx)
-	if err != nil {
-		return nil, err
+	dbBackend, set := os.LookupEnv("DB_BACKEND")
+	if !set || dbBackend == "" {
+		return nil, fmt.Errorf("DB_BACKEND is not set")
+	}
+
+	var dbController db.DatabaseController
+
+	switch dbBackend {
+	case "postgres":
+		dbController, err = postgres.NewPostgresController(ctx)
+		if err != nil {
+			return nil, err
+		}
+		log.Logger.Info("using postgres backend")
+
+	case "firestore":
+		dbController, err = firebase.NewFirestoreController(ctx)
+		if err != nil {
+			return nil, err
+		}
+		log.Logger.Info("using firestore backend")
+
+	case "mongodb":
+		dbController, err = mongodb.NewMongodbController(ctx)
+		if err != nil {
+			return nil, err
+		}
+		log.Logger.Info("using mongodb backend")
+	default:
+		return nil, fmt.Errorf("unknown backend")
 	}
 
 	accessTokenTTL := time.Minute * 15
@@ -64,7 +91,7 @@ func NewApp(port int /*TODO: pass a secret */) (*App, error) {
 		openaiClient:     openaiClient,
 		ipResolverClient: ipResolverClient,
 		auth:             auth.NewAuthManager([]byte("my-dummy-secret"), accessTokenTTL),
-		dbController:     dbContoller,
+		dbController:     dbController,
 		port:             port}
 
 	// CORS middleware

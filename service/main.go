@@ -12,7 +12,16 @@ import (
 
 func main() {
 	port := flag.Int("port", 3030, "Listening port")
+	logLevel := flag.String("loglevel", "debug", "Logging level")
 	flag.Parse()
+
+	log.SetupGlobalLogLevel(*logLevel)
+
+	// NOTE: This won't work when executed with docker compose,
+	// because the .env file won't exist inside a docker container.
+	// if err := godotenv.Load(".env"); err != nil {
+	// 	log.Logger.Fatal("Failed to load .env file, error: %v", err)
+	// }
 
 	app, err := api.NewApp(*port)
 	if err != nil {

@@ -8,12 +8,8 @@ services:
       - "127.0.0.1:3030:3030"
     depends_on:
       - postgres-db
-    environment:
-      # TODO: Define firestore URL
-      FIRESTORE_DB_URL: ""
-      OPENAI_API_KEY: ""
-      IPFLARE_API_KEY: "d4815a7185da6aae.69f941c643a3f41f751fcc9ef59dcfcfed08a00fb57907b4e750a4a1cdbffc3a"
-      POSTGRES_URL: "postgres://postgres:password@postgres-db:5432/postgres?sslmode=disable"
+    env_file:
+      - ".env"
     networks:
       - backend
 
