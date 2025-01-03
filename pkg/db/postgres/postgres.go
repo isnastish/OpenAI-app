@@ -9,7 +9,6 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"golang.org/x/crypto/bcrypt"
 
 	"github.com/isnastish/openai/pkg/api/models"
 	"github.com/isnastish/openai/pkg/log"
@@ -97,19 +96,8 @@ func (pc *PostgresController) AddUser(ctx context.Context, userData *models.User
 		"country", "city", "country_code"
 	) values ($1, $2, $3, $4, $5, $6, $7);`
 
-	// TODO: Use salt appended to the password and hash it all together.
-	// Read up more about salt:
-	// https://en.wikipedia.org/wiki/Salt_(cryptography)
-
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userData.Password), bcrypt.DefaultCost)
-	if err != nil {
-		return fmt.Errorf("postgres: failed to encrypt password, error: %v", err)
-	}
-
-	log.Logger.Info("Encrypted password: %s", hashedPassword)
-
 	if _, err := conn.Exec(ctx, query, userData.FirstName, userData.LastName,
-		userData.Email, hashedPassword, geolocationData.Country, geolocationData.City, geolocationData.CountryCode); err != nil {
+		userData.Email, userData.Password, geolocationData.Country, geolocationData.City, geolocationData.CountryCode); err != nil {
 		return fmt.Errorf("postgres: failed to add user, error: %v", err)
 	}
 
