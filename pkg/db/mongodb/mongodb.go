@@ -62,16 +62,16 @@ func (db *MondgodbController) AddUser(ctx context.Context, userData *models.User
 }
 
 func (db *MondgodbController) GetUserByEmail(ctx context.Context, email string) (*models.UserData, error) {
-	// NOTE: This might not work, since in example we decode into bson.M,
-	// which holds the result.id, but we could give it a try.
 	var result models.UserData
 	if err := db.collection.FindOne(ctx, bson.M{"email": email}).Decode(&result); err != nil {
 		if err == mongo.ErrNoDocuments {
-			return nil, fmt.Errorf("mongodb: user with email %s is not found", email)
+			// NOTE: It's not an error if a user is not found,
+			// so we just return nil for the user and for the error.
+			// Error is returned ONLY when the query failed.
+			return nil, nil
 		}
 		return nil, err
 	}
-
 	return &result, nil
 }
 
