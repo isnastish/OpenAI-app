@@ -220,6 +220,7 @@ func (a *App) SignupRoute(ctx *fiber.Ctx) error {
 	dbCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
+	// Check if the user with given email address already exists.
 	user, err := a.dbController.GetUserByEmail(dbCtx, userData.Email)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
@@ -245,6 +246,25 @@ func (a *App) SignupRoute(ctx *fiber.Ctx) error {
 	}
 
 	log.Logger.Info("Retrieved geolocation data: %v", geolocationData)
+
+	// TODO: Implement data validation here as well.
+	// Move the logic for validating data into a separate function together
+	// with encrypting the password.
+
+	// TODO: Use salt appended to the password and hash it all together.
+	// Read up more about salt:
+	// https://en.wikipedia.org/wiki/Salt_(cryptography)
+
+	// NOTE: Instead of hashing the password in each back-end,
+	// hash it in route instead and assign to userData struct.
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userData.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("postgres: failed to encrypt password, error: %v", err)
+	}
+
+	log.Logger.Info("Encrypted password: %s", hashedPassword)
+
+	userData.Password = string(hashedPassword)
 
 	if err := a.dbController.AddUser(dbCtx, &userData, geolocationData); err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("failed to add user, error: %v", err))

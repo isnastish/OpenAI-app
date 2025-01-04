@@ -1,13 +1,13 @@
 package models
 
 type UserData struct {
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Email     string `json:"email"`
-	Password  string `json:"password"`
+	FirstName string `json:"first_name" bson:"first_name"`
+	LastName  string `json:"last_name" bson:"last_name"`
+	Email     string `json:"email" bson:"email"`
+	Password  string `json:"password" bson:"password"`
 	// Geolocation data
-	Country string `json:"-"`
-	City    string `json:"-"`
+	// Country string `json:"-"`
+	// City    string `json:"-"`
 	// Not used currently, because the database controller
 	// doesn't have the corresponding field.
 	// CreatedAt time.Time `json:"-"`
