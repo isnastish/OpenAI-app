@@ -27,9 +27,9 @@ func NewFirestoreController(ctx context.Context) (*FirestoreController, error) {
 		return nil, fmt.Errorf("firebase: failed to create firebase app, error: %v", err)
 	}
 
-	firestoreDbUrl, set := os.LookupEnv("FIRESTORE_DB_URL")
+	firestoreDbUrl, set := os.LookupEnv("FIRESTORE_URL")
 	if !set || firestoreDbUrl == "" {
-		return nil, fmt.Errorf("firebase: FIRESTORE_DB_URL is not set")
+		return nil, fmt.Errorf("firebase: FIRESTORE_URL is not set")
 	}
 
 	client, err := app.DatabaseWithURL(ctx, firestoreDbUrl)

@@ -33,9 +33,12 @@ func NewMongodbController(ctx context.Context) (*MondgodbController, error) {
 		return nil, fmt.Errorf("mongodb: failed to create mongodb client, error: %v", err)
 	}
 
-	// NOTE: `newdatabase` is a testing database which is not meant to use for production.
-	// as well as `users` collection inside that database.
-	usersCollection := client.Database("newdatabase").Collection("users")
+	// TODO: Consider startup timeout, that should be specified with client options.
+	// if err := client.Ping(ctx, nil); err != nil {
+	// 	return nil, fmt.Errorf("mongodb: server is unavailable, error: %v", err)
+	// }
+
+	usersCollection := client.Database("users_database").Collection("users")
 
 	return &MondgodbController{
 		collection: usersCollection,
