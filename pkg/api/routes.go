@@ -220,6 +220,7 @@ func (a *App) SignupRoute(ctx *fiber.Ctx) error {
 	dbCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
+	// Check if the user with given email address already exists.
 	user, err := a.dbController.GetUserByEmail(dbCtx, userData.Email)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
