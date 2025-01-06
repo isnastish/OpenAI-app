@@ -251,6 +251,8 @@ func (a *App) SignupRoute(ctx *fiber.Ctx) error {
 	// Move the logic for validating data into a separate function together
 	// with encrypting the password.
 
+	// NOTE: Instead of hashing the password in each back-end,
+	// hash it in route instead and assign to userData struct.
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userData.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return fmt.Errorf("postgres: failed to encrypt password, error: %v", err)
