@@ -20,7 +20,7 @@ type FirestoreController struct {
 	client *firestore.Client
 }
 
-func (db *FirestoreController) Close() error {
+func (db *FirestoreController) Close(_ context.Context) error {
 	return nil
 }
 

@@ -21,6 +21,11 @@ type PostgresController struct {
 	connPool *pgxpool.Pool
 }
 
+func (pc *PostgresController) Close(_ context.Context) error {
+	pc.connPool.Close()
+	return nil
+}
+
 func NewPostgresController(ctx context.Context) (*PostgresController, error) {
 	postgresUrl, set := os.LookupEnv("POSTGRES_URL")
 	if !set || postgresUrl == "" {
@@ -159,9 +164,4 @@ func (pc *PostgresController) GetUserByID(ctx context.Context, id int) (*models.
 	}
 
 	return &user, nil
-}
-
-func (pc *PostgresController) Close() error {
-	pc.connPool.Close()
-	return nil
 }
