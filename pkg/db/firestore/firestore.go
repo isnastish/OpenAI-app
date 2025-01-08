@@ -14,13 +14,14 @@ import (
 // which are stored in Collections.
 // Cloud Firestore creates collections and documents implicitly the first time you add data to the document. You do not need to explicitly create collections or documents.
 
-// NOTE: Context should never be a part of a struct,
-// but instead passed to each function that needs it.
 type FirestoreController struct {
 	client *firestore.Client
 }
 
 func (db *FirestoreController) Close(_ context.Context) error {
+	if err := db.client.Close(); err != nil {
+		return fmt.Errorf("firestore: failed to close client: %v", err)
+	}
 	return nil
 }
 
@@ -35,6 +36,8 @@ func NewFirestoreController(ctx context.Context) (*FirestoreController, error) {
 		projectId = firestore.DetectProjectID
 	}
 
+	// NOTE: firestore documentation doesn't specify if we need to invoke
+	// close() method on the client instance.
 	databaseId, set := os.LookupEnv("FIRESTORE_DATABASE_ID")
 	if set { // the variable is set, but the value might be empty
 		client, err = firestore.NewClientWithDatabase(ctx, projectId, databaseId)
@@ -52,6 +55,7 @@ func NewFirestoreController(ctx context.Context) (*FirestoreController, error) {
 }
 
 func (db *FirestoreController) AddUser(ctx context.Context, userData *models.UserData, geolocationData *models.GeolocationData) error {
+	// db.client.Collection("users").
 	return nil
 }
 
