@@ -18,5 +18,5 @@ type DatabaseController interface {
 	GetUserByEmail(ctx context.Context, email string) (*models.UserData, error)
 	// The subject from the claims should have user ID
 	GetUserByID(ctx context.Context, id int) (*models.UserData, error)
-	Close() error
+	Close(ctx context.Context) error
 }

@@ -22,9 +22,16 @@ type MondgodbController struct {
 	collection *mongo.Collection
 }
 
+func (db *MondgodbController) Close(ctx context.Context) error {
+	if err := db.client.Disconnect(ctx); err != nil {
+		return fmt.Errorf("mongodb: failed to disconnect mongodb client, error: %v", err)
+	}
+	return nil
+}
+
 func NewMongodbController(ctx context.Context) (*MondgodbController, error) {
 	mongodbUri, set := os.LookupEnv("MONGODB_URI")
-	if !set || mongodbUri == "" {
+	if !set {
 		return nil, fmt.Errorf("MONGODB_URI is not set")
 	}
 
@@ -79,13 +86,4 @@ func (db *MondgodbController) GetUserByID(ctx context.Context, id int) (*models.
 	// TODO: We would have to reconsider this function since an id in mongo's collection
 	// is represented as a string.
 	return nil, nil
-}
-
-func (db *MondgodbController) Close() error {
-	// TODO: Switch to normal context, but that would probably
-	// require refactoring in all db implementations.
-	if err := db.client.Disconnect(context.TODO()); err != nil {
-		return fmt.Errorf("mongodb: failed to disconnect mongodb client, error: %v", err)
-	}
-	return nil
 }

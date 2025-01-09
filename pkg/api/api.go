@@ -130,8 +130,8 @@ func (a *App) Serve() error {
 }
 
 func (a *App) Shutdown() error {
-	// close database connnection first
-	defer a.dbController.Close()
+	// TODO: Create a context with timeout?
+	defer a.dbController.Close(context.Background())
 
 	// TODO: Use ShutdownWithContext instead
 	if err := a.fiberApp.Shutdown(); err != nil {
