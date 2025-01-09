@@ -1,5 +1,8 @@
 FROM golang:1.23 AS build-env
 
+# TODO: Figure out how to cache Go packages. 
+# This might be a good start: https://docs.docker.com/reference/dockerfile/#run---mounttypebind
+
 WORKDIR /openai/service/
 
 ADD . /openai/service/
