@@ -1,5 +1,7 @@
 FROM golang:1.23 AS build-env
 
+WORKDIR /openai/service/
+
 ADD . /openai/service/
 
 RUN CGO_ENABLED=0 GOOS=linux go build -a -v -o /openai/bin/service github.com/isnastish/openai/service/
