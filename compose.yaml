@@ -3,8 +3,12 @@ services:
     container_name: "openai"
     image: 'openai:latest'
     volumes:
-      # :ro - read-only, so we cannot edit credentials
-      - ${HOME}/.config/gcloud/application_default_credentials.json:/app/gcloud/:ro
+      # NOTE: ${HOME} is not expanded to the home directory on the host machine, 
+      # NOTE: docker inspect <service_name> is used to display mounts  
+      # sudo docker inspect <service> -f 'json' output.json
+      # TODO: We should find a more generalized way of specifying 
+      # the path to credentials.
+      - /home/alexey/.config/gcloud:/gcloud/:ro
     build: 
       dockerfile: ./Dockerfile
     ports:
@@ -34,6 +38,3 @@ services:
 networks:
   backend:
     driver: bridge
-
-# volumes:
-#   ${HOME}/.config/gcloud:
