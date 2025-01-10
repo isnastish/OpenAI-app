@@ -12,6 +12,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/isnastish/openai/pkg/api/models"
+	"github.com/isnastish/openai/pkg/auth"
 	"github.com/isnastish/openai/pkg/log"
 )
 
@@ -134,11 +135,7 @@ func (a *App) RefreshTokensRoute(ctx *fiber.Ctx) error {
 	return ctx.JSON(tokenPair, "application/json")
 }
 
-func (a *App) LoginImpl() error {
-	return nil
-}
-
-func (a *App) LoginRoute(ctx *fiber.Ctx) error {
+func (a *App) LoginImpl(ctx context.Context, userData *models.UserData) (*models.TokenPair, *auth.Cookie, error) {
 	// TODO: We should validate users data,
 	// an email address and user's password.
 	// In order to do that, we would have to retrieve a user from the database
@@ -146,6 +143,11 @@ func (a *App) LoginRoute(ctx *fiber.Ctx) error {
 	// than UserData, its geolocation as well.
 	// If passwords don't match we return BadRequest, otherwise
 	// we proceed and update access and refresh tokens.
+
+	return nil
+}
+
+func (a *App) LoginRoute(ctx *fiber.Ctx) error {
 
 	var userData models.UserData
 	if err := json.Unmarshal(ctx.Body(), &userData); err != nil {
