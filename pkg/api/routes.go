@@ -31,25 +31,30 @@ import (
 // The content of the header should look like the following:
 // Authorization: Bearer <token>
 
-func (a *App) OpenaAIRoute(ctx *fiber.Ctx) error {
-	reqBody := ctx.Request().Body()
-
-	var reqData models.OpenAIRequest
-	if err := json.Unmarshal(reqBody, &reqData); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "Failed to unmarshal request body")
+// TODO: This should be moved outside routes file.
+func (a *App) openaAIimpl(ctx context.Context, body []byte) (*models.OpenAIResp, error) {
+	var query models.OpenAIRequest
+	if err := json.Unmarshal(body, &query); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal request body: %v", err)
 	}
 
-	reqCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-
-	resp, err := a.openaiClient.AskOpenAI(reqCtx, reqData.OpenaiQuestion)
+	result, err := a.openaiClient.AskOpenAI(ctx, query.OpenaiQuestion)
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("openai: %s", err.Error()))
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (a *App) OpenAIRoute(ctx *fiber.Ctx) error {
+	// TODO: Make copy of request body instead
+	result, err := a.openaAIimpl(ctx.Context(), ctx.Request().Body())
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
 	return ctx.JSON(map[string]string{
-		"model":  resp.Model,
-		"openai": resp.Choices[0].Message.Content,
+		"openai": result.Choices[0].Message.Content,
 	}, "application/json")
 }
 
@@ -127,6 +132,10 @@ func (a *App) RefreshTokensRoute(ctx *fiber.Ctx) error {
 	})
 
 	return ctx.JSON(tokenPair, "application/json")
+}
+
+func (a *App) LoginImpl() error {
+	return nil
 }
 
 func (a *App) LoginRoute(ctx *fiber.Ctx) error {

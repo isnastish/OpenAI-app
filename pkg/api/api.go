@@ -20,18 +20,12 @@ import (
 )
 
 type App struct {
-	// http server
-	fiberApp *fiber.App
-	// client for interacting with openai model
-	openaiClient *openai.Client
-	// ip resovler client for retrieving geolocation data
+	fiberApp         *fiber.App
+	openaiClient     *openai.Client
 	ipResolverClient *ipresolver.Client
-	// authentication manager
-	auth *auth.AuthManager
-	// database controller for persisting data
-	dbController db.DatabaseController
-	// settings
-	port int
+	auth             *auth.AuthManager
+	dbController     db.DatabaseController
+	port             int
 }
 
 func NewApp(port int /*TODO: pass a secret */) (*App, error) {
@@ -114,7 +108,7 @@ func NewApp(port int /*TODO: pass a secret */) (*App, error) {
 	app.fiberApp.Get("/refresh", app.RefreshTokensRoute)
 
 	// NOTE: This route should be accessed only if the authentication passes.
-	app.fiberApp.Post("/protected/openai", app.OpenaAIRoute)
+	app.fiberApp.Post("/protected/openai", app.OpenAIRoute)
 
 	return app, nil
 }
