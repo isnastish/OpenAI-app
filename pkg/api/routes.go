@@ -1,9 +1,9 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
@@ -12,7 +12,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/isnastish/openai/pkg/api/models"
-	"github.com/isnastish/openai/pkg/auth"
 	"github.com/isnastish/openai/pkg/log"
 )
 
@@ -32,24 +31,8 @@ import (
 // The content of the header should look like the following:
 // Authorization: Bearer <token>
 
-// TODO: This should be moved outside routes file.
-func (a *App) openaAIimpl(ctx context.Context, body []byte) (*models.OpenAIResp, error) {
-	var query models.OpenAIRequest
-	if err := json.Unmarshal(body, &query); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal request body: %v", err)
-	}
-
-	result, err := a.openaiClient.AskOpenAI(ctx, query.OpenaiQuestion)
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
 func (a *App) OpenAIRoute(ctx *fiber.Ctx) error {
-	// TODO: Make copy of request body instead
-	result, err := a.openaAIimpl(ctx.Context(), ctx.Request().Body())
+	result, err := a.openaiRouteImpl(ctx.Context(), bytes.Clone(ctx.Body()))
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
@@ -135,76 +118,30 @@ func (a *App) RefreshTokensRoute(ctx *fiber.Ctx) error {
 	return ctx.JSON(tokenPair, "application/json")
 }
 
-func (a *App) LoginImpl(ctx context.Context, userData *models.UserData) (*models.TokenPair, *auth.Cookie, error) {
-	// TODO: We should validate users data,
-	// an email address and user's password.
-	// In order to do that, we would have to retrieve a user from the database
-	// The only problem is that our database contains other data
-	// than UserData, its geolocation as well.
-	// If passwords don't match we return BadRequest, otherwise
-	// we proceed and update access and refresh tokens.
-
-	return nil, nil, nil
-}
-
 func (a *App) LoginRoute(ctx *fiber.Ctx) error {
-
-	var userData models.UserData
-	if err := json.Unmarshal(ctx.Body(), &userData); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("failed to unmarshal request body, error: %v", err))
-	}
-
-	// TODO: Perform data validation before making queries to the database.
-	// password and email address (on the submitted data).
-
-	dbCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	user, err := a.dbController.GetUserByEmail(dbCtx, userData.Email)
+	tokens, cookie, err := a.LoginImpl(ctx.Context(), ctx.Body())
 	if err != nil {
+		// NOTE: Currently we don't have a way to distinguish between different error codes.
+		// Because it can either be an authorization error, or a server internal error.
+		// Unauthorized(401) status should be returned when user specifies invalid username (email) or password.
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	if user == nil {
-		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("user with email: %s doesn't exist", userData.Email))
-	}
-
-	// Compare user's password
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(userData.Password)); err != nil {
-		switch {
-		case errors.Is(err, bcrypt.ErrMismatchedHashAndPassword):
-			return fiber.NewError(fiber.StatusBadRequest, "invalid password")
-		default:
-			return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("failed to validate user's password, error: %v", err))
-		}
-	}
-
-	tokenPair, err := a.auth.GetTokenPair(userData.Email)
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError)
-	}
-
-	// The cookie holds a refresh token with exactly the same
-	// TTL as the refresh token itself.
-	cookie := a.auth.GetCookie(tokenPair.RefreshToken)
-
-	// Set an actual cookie
 	ctx.Cookie(&fiber.Cookie{
 		Name:     cookie.Name,
 		Value:    cookie.Value,
 		Path:     cookie.Path,
 		Expires:  cookie.Expires,
 		MaxAge:   cookie.MaxAge,
-		HTTPOnly: true, // javascript won't have access to this cookie in a web-browser
+		HTTPOnly: true,
 		Secure:   true,
 		SameSite: fiber.CookieSameSiteStrictMode,
 	})
 
-	return ctx.JSON(tokenPair, "application/json")
+	return ctx.JSON(tokens, "application/json")
 }
 
 func (a *App) LogoutRoute(ctx *fiber.Ctx) error {
-	// Delete the cookie
 	ctx.Cookie(&fiber.Cookie{
 		Name:     a.auth.CookieName,
 		Value:    "",

@@ -10,9 +10,6 @@ import (
 	"github.com/isnastish/openai/pkg/api/models"
 )
 
-// NOTE: Why the logic for validating a refresh token and jwt token should
-// be different?
-
 type Cookie struct {
 	Name    string
 	Value   string
@@ -32,7 +29,7 @@ type AuthManager struct {
 
 func NewAuthManager(secret []byte, accessTokenTTL time.Duration) *AuthManager {
 	return &AuthManager{
-		CookieName:      "__refresh_token",
+		CookieName:      "__host_refresh_token",
 		DefaultIssuer:   "openai-server",
 		AccessTokenTTL:  accessTokenTTL,
 		RefreshTokenTTL: time.Hour * 48,
@@ -40,7 +37,7 @@ func NewAuthManager(secret []byte, accessTokenTTL time.Duration) *AuthManager {
 	}
 }
 
-func (a *AuthManager) GetTokenPair(userEmail string) (*models.TokenPair, error) {
+func (a *AuthManager) GetTokens(userEmail string) (*models.Tokens, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		&models.Claims{
 			Email: userEmail,
@@ -75,7 +72,7 @@ func (a *AuthManager) GetTokenPair(userEmail string) (*models.TokenPair, error) 
 		return nil, fmt.Errorf("auth: failed to sign a refresh token: %v", err)
 	}
 
-	return &models.TokenPair{
+	return &models.Tokens{
 		AccessToken:  signedAccessToken,
 		RefreshToken: signedRefreshToken,
 	}, nil
@@ -114,11 +111,9 @@ func (a *AuthManager) ValidateJwtToken(tokenString string) error {
 
 		return []byte(a.JwtSecret), nil
 	})
-
 	if err != nil {
 		return err
 	}
-
 	if !token.Valid {
 		return fmt.Errorf("jwt token is invalid")
 	}
