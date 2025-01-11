@@ -144,7 +144,7 @@ func (a *App) LoginImpl(ctx context.Context, userData *models.UserData) (*models
 	// If passwords don't match we return BadRequest, otherwise
 	// we proceed and update access and refresh tokens.
 
-	return nil
+	return nil, nil, nil
 }
 
 func (a *App) LoginRoute(ctx *fiber.Ctx) error {
