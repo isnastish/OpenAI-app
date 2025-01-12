@@ -3,16 +3,12 @@ package api
 import (
 	"bytes"
 	"context"
-	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
-	"golang.org/x/crypto/bcrypt"
 
 	"github.com/isnastish/openai/pkg/api/models"
-	"github.com/isnastish/openai/pkg/log"
 )
 
 // TODO: There should be a clear separation between routes and
@@ -32,7 +28,7 @@ import (
 // Authorization: Bearer <token>
 
 func (a *App) OpenAIRoute(ctx *fiber.Ctx) error {
-	result, err := a.openaiRouteImpl(ctx.Context(), bytes.Clone(ctx.Body()))
+	result, err := a.openaiController(ctx.Context(), bytes.Clone(ctx.Body()))
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
@@ -119,7 +115,7 @@ func (a *App) RefreshTokensRoute(ctx *fiber.Ctx) error {
 }
 
 func (a *App) LoginRoute(ctx *fiber.Ctx) error {
-	tokens, cookie, err := a.LoginImpl(ctx.Context(), ctx.Body())
+	tokens, cookie, err := a.loginController(ctx.Context(), ctx.Body())
 	if err != nil {
 		// NOTE: Currently we don't have a way to distinguish between different error codes.
 		// Because it can either be an authorization error, or a server internal error.
@@ -157,30 +153,6 @@ func (a *App) LogoutRoute(ctx *fiber.Ctx) error {
 }
 
 func (a *App) SignupRoute(ctx *fiber.Ctx) error {
-	var userData models.UserData
-	if err := json.Unmarshal(ctx.Body(), &userData); err != nil {
-		log.Logger.Info("failed to unmarshal request body: error %v", err)
-		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("failed to unmarshal request body, error: %v", err))
-	}
-
-	log.Logger.Info("user data: %v", userData)
-
-	dbCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	// Check if the user with given email address already exists.
-	user, err := a.dbController.GetUserByEmail(dbCtx, userData.Email)
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
-	}
-
-	// NOTE: Probably internal server error is not the best way of doing this.
-	// We should return 409 -> Conflict, or so.
-	if user != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("user with email: %s already exists", userData.Email))
-	}
-
-	// Get IP addresses in X-Forwarded-For header
 	var ipAddr string
 	if (len(ctx.IPs())) > 0 {
 		ipAddr = ctx.IPs()[0]
@@ -188,33 +160,9 @@ func (a *App) SignupRoute(ctx *fiber.Ctx) error {
 		ipAddr = ctx.IP()
 	}
 
-	geolocationData, err := a.ipResolverClient.GetGeolocationData(ipAddr)
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("failed to retrieve geolocation data, error: %v", err))
+	if err := a.signupController(ctx.Context(), ctx.Body(), ipAddr); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
-
-	log.Logger.Info("Retrieved geolocation data: %v", geolocationData)
-
-	// TODO: Implement data validation here as well.
-	// Move the logic for validating data into a separate function together
-	// with encrypting the password.
-
-	// NOTE: Instead of hashing the password in each back-end,
-	// hash it in route instead and assign to userData struct.
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userData.Password), bcrypt.DefaultCost)
-	if err != nil {
-		return fmt.Errorf("postgres: failed to encrypt password, error: %v", err)
-	}
-
-	log.Logger.Info("Encrypted password: %s", hashedPassword)
-
-	userData.Password = string(hashedPassword)
-
-	if err := a.dbController.AddUser(dbCtx, &userData, geolocationData); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("failed to add user, error: %v", err))
-	}
-
-	log.Logger.Info("Successfully added user to the database")
 
 	return ctx.SendStatus(fiber.StatusOK)
 }

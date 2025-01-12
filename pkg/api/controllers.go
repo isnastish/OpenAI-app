@@ -9,6 +9,7 @@ import (
 	"github.com/isnastish/openai/pkg/api/models"
 	"github.com/isnastish/openai/pkg/auth"
 	"github.com/isnastish/openai/pkg/log"
+	"github.com/isnastish/openai/pkg/validator"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -27,7 +28,7 @@ func unmarshalRequestData[T models.UserData | models.OpenAIRequest](requestBody 
 	return &data, nil
 }
 
-func (a *App) openaiRouteImpl(ctx context.Context, requestBody []byte) (*models.OpenAIResp, error) {
+func (a *App) openaiController(ctx context.Context, requestBody []byte) (*models.OpenAIResp, error) {
 	query, err := unmarshalRequestData[models.OpenAIRequest](requestBody)
 	if err != nil {
 		return nil, err
@@ -41,7 +42,7 @@ func (a *App) openaiRouteImpl(ctx context.Context, requestBody []byte) (*models.
 	return result, nil
 }
 
-func (a *App) LoginImpl(ctx context.Context, requestBody []byte) (*models.TokenPair, *auth.Cookie, error) {
+func (a *App) loginController(ctx context.Context, requestBody []byte) (*models.Tokens, *auth.Cookie, error) {
 	// TODO: We should validate users data,
 	// an email address and user's password.
 	// In order to do that, we would have to retrieve a user from the database
@@ -86,13 +87,15 @@ func (a *App) LoginImpl(ctx context.Context, requestBody []byte) (*models.TokenP
 	return tokens, cookie, nil
 }
 
-func (a *App) signupRouteImpl(ctx context.Context, requestBody []byte, ipAddr string) error {
+func (a *App) signupController(ctx context.Context, requestBody []byte, ipAddr string) error {
 	userData, err := unmarshalRequestData[models.UserData](requestBody)
 	if err != nil {
 		return err
 	}
 
-	// TODO: Implement user data validation.
+	if err := validator.ValidateUserPassword(userData.Password); err != nil {
+		return err
+	}
 
 	// Check if the user with given email address already exists.
 	existingUser, err := a.dbController.GetUserByEmail(ctx, userData.Email)
@@ -124,4 +127,8 @@ func (a *App) signupRouteImpl(ctx context.Context, requestBody []byte, ipAddr st
 	log.Logger.Info("Successfully added a new user")
 
 	return nil
+}
+
+func (a *App) refreshTokenController() (*models.Tokens, *auth.Cookie, error) {
+	return nil, nil, nil
 }
