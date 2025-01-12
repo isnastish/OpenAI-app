@@ -88,7 +88,7 @@ func (pc *PostgresController) createTable(ctx context.Context) error {
 	return nil
 }
 
-func (pc *PostgresController) AddUser(ctx context.Context, userData *models.UserData, geolocationData *models.GeolocationData) error {
+func (pc *PostgresController) AddUser(ctx context.Context, userData *models.UserData, geolocation *models.Geolocation) error {
 	conn, err := pc.connPool.Acquire(ctx)
 	if err != nil {
 		return fmt.Errorf("postgres: failed to acquire connection from the pool, error: %v", err)
@@ -102,7 +102,7 @@ func (pc *PostgresController) AddUser(ctx context.Context, userData *models.User
 	) values ($1, $2, $3, $4, $5, $6, $7);`
 
 	if _, err := conn.Exec(ctx, query, userData.FirstName, userData.LastName,
-		userData.Email, userData.Password, geolocationData.Country, geolocationData.City, geolocationData.CountryCode); err != nil {
+		userData.Email, userData.Password, geolocation.Country, geolocation.City, geolocation.CountryCode); err != nil {
 		return fmt.Errorf("postgres: failed to add user, error: %v", err)
 	}
 

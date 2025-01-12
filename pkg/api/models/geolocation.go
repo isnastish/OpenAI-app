@@ -1,6 +1,6 @@
 package models
 
-type GeolocationData struct {
+type Geolocation struct {
 	Ip          string `json:"ip,omitempty"`
 	City        string `json:"city,omitempty"`
 	Region      string `json:"region,omitempty"`

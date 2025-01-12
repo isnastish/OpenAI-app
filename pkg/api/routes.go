@@ -1,18 +1,14 @@
 package api
 
 import (
+	"bytes"
 	"context"
-	"encoding/json"
-	"errors"
-	"fmt"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
-	"golang.org/x/crypto/bcrypt"
 
 	"github.com/isnastish/openai/pkg/api/models"
-	"github.com/isnastish/openai/pkg/log"
 )
 
 // TODO: There should be a clear separation between routes and
@@ -31,25 +27,14 @@ import (
 // The content of the header should look like the following:
 // Authorization: Bearer <token>
 
-func (a *App) OpenaAIRoute(ctx *fiber.Ctx) error {
-	reqBody := ctx.Request().Body()
-
-	var reqData models.OpenAIRequest
-	if err := json.Unmarshal(reqBody, &reqData); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "Failed to unmarshal request body")
-	}
-
-	reqCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-
-	resp, err := a.openaiClient.AskOpenAI(reqCtx, reqData.OpenaiQuestion)
+func (a *App) OpenAIRoute(ctx *fiber.Ctx) error {
+	result, err := a.openaiController(ctx.Context(), bytes.Clone(ctx.Body()))
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("openai: %s", err.Error()))
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
 	return ctx.JSON(map[string]string{
-		"model":  resp.Model,
-		"openai": resp.Choices[0].Message.Content,
+		"openai": result.Choices[0].Message.Content,
 	}, "application/json")
 }
 
@@ -106,7 +91,7 @@ func (a *App) RefreshTokensRoute(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusUnauthorized, "unknown user")
 	}
 
-	tokenPair, err := a.auth.GetTokenPair(user.Email)
+	tokenPair, err := a.auth.GetTokens(user.Email)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
@@ -130,70 +115,29 @@ func (a *App) RefreshTokensRoute(ctx *fiber.Ctx) error {
 }
 
 func (a *App) LoginRoute(ctx *fiber.Ctx) error {
-	// TODO: We should validate users data,
-	// an email address and user's password.
-	// In order to do that, we would have to retrieve a user from the database
-	// The only problem is that our database contains other data
-	// than UserData, its geolocation as well.
-	// If passwords don't match we return BadRequest, otherwise
-	// we proceed and update access and refresh tokens.
-
-	var userData models.UserData
-	if err := json.Unmarshal(ctx.Body(), &userData); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("failed to unmarshal request body, error: %v", err))
-	}
-
-	// TODO: Perform data validation before making queries to the database.
-	// password and email address (on the submitted data).
-
-	dbCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	user, err := a.dbController.GetUserByEmail(dbCtx, userData.Email)
+	tokens, cookie, err := a.loginController(ctx.Context(), ctx.Body())
 	if err != nil {
+		// NOTE: Currently we don't have a way to distinguish between different error codes.
+		// Because it can either be an authorization error, or a server internal error.
+		// Unauthorized(401) status should be returned when user specifies invalid username (email) or password.
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	if user == nil {
-		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("user with email: %s doesn't exist", userData.Email))
-	}
-
-	// Compare user's password
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(userData.Password)); err != nil {
-		switch {
-		case errors.Is(err, bcrypt.ErrMismatchedHashAndPassword):
-			return fiber.NewError(fiber.StatusBadRequest, "invalid password")
-		default:
-			return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("failed to validate user's password, error: %v", err))
-		}
-	}
-
-	tokenPair, err := a.auth.GetTokenPair(userData.Email)
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError)
-	}
-
-	// The cookie holds a refresh token with exactly the same
-	// TTL as the refresh token itself.
-	cookie := a.auth.GetCookie(tokenPair.RefreshToken)
-
-	// Set an actual cookie
 	ctx.Cookie(&fiber.Cookie{
 		Name:     cookie.Name,
 		Value:    cookie.Value,
 		Path:     cookie.Path,
 		Expires:  cookie.Expires,
 		MaxAge:   cookie.MaxAge,
-		HTTPOnly: true, // javascript won't have access to this cookie in a web-browser
+		HTTPOnly: true,
 		Secure:   true,
 		SameSite: fiber.CookieSameSiteStrictMode,
 	})
 
-	return ctx.JSON(tokenPair, "application/json")
+	return ctx.JSON(tokens, "application/json")
 }
 
 func (a *App) LogoutRoute(ctx *fiber.Ctx) error {
-	// Delete the cookie
 	ctx.Cookie(&fiber.Cookie{
 		Name:     a.auth.CookieName,
 		Value:    "",
@@ -209,30 +153,6 @@ func (a *App) LogoutRoute(ctx *fiber.Ctx) error {
 }
 
 func (a *App) SignupRoute(ctx *fiber.Ctx) error {
-	var userData models.UserData
-	if err := json.Unmarshal(ctx.Body(), &userData); err != nil {
-		log.Logger.Info("failed to unmarshal request body: error %v", err)
-		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("failed to unmarshal request body, error: %v", err))
-	}
-
-	log.Logger.Info("user data: %v", userData)
-
-	dbCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	// Check if the user with given email address already exists.
-	user, err := a.dbController.GetUserByEmail(dbCtx, userData.Email)
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
-	}
-
-	// NOTE: Probably internal server error is not the best way of doing this.
-	// We should return 409 -> Conflict, or so.
-	if user != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("user with email: %s already exists", userData.Email))
-	}
-
-	// Get IP addresses in X-Forwarded-For header
 	var ipAddr string
 	if (len(ctx.IPs())) > 0 {
 		ipAddr = ctx.IPs()[0]
@@ -240,33 +160,9 @@ func (a *App) SignupRoute(ctx *fiber.Ctx) error {
 		ipAddr = ctx.IP()
 	}
 
-	geolocationData, err := a.ipResolverClient.GetGeolocationData(ipAddr)
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("failed to retrieve geolocation data, error: %v", err))
+	if err := a.signupController(ctx.Context(), ctx.Body(), ipAddr); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
-
-	log.Logger.Info("Retrieved geolocation data: %v", geolocationData)
-
-	// TODO: Implement data validation here as well.
-	// Move the logic for validating data into a separate function together
-	// with encrypting the password.
-
-	// NOTE: Instead of hashing the password in each back-end,
-	// hash it in route instead and assign to userData struct.
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userData.Password), bcrypt.DefaultCost)
-	if err != nil {
-		return fmt.Errorf("postgres: failed to encrypt password, error: %v", err)
-	}
-
-	log.Logger.Info("Encrypted password: %s", hashedPassword)
-
-	userData.Password = string(hashedPassword)
-
-	if err := a.dbController.AddUser(dbCtx, &userData, geolocationData); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("failed to add user, error: %v", err))
-	}
-
-	log.Logger.Info("Successfully added user to the database")
 
 	return ctx.SendStatus(fiber.StatusOK)
 }

@@ -13,7 +13,7 @@ func TestJwtTokenExpired(t *testing.T) {
 	accessTokenTTL := time.Minute * 1
 	m := NewAuthManager([]byte(secret), accessTokenTTL)
 
-	tokenPair, err := m.GetTokenPair(email)
+	tokenPair, err := m.GetTokens(email)
 	if err != nil {
 		t.Errorf("failed to get token pair %v", err)
 	}
@@ -30,7 +30,7 @@ func TestJwtTokenExpired(t *testing.T) {
 func TestSuccessfullAccessTokenValidation(t *testing.T) {
 	m := NewAuthManager([]byte(secret), time.Second*30) // 30 seconds TTL
 
-	tokenPair, err := m.GetTokenPair(email)
+	tokenPair, err := m.GetTokens(email)
 	if err != nil {
 		t.Errorf("failed to get token pair %v", err)
 	}
