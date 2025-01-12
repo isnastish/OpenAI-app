@@ -14,7 +14,7 @@ import (
 // with MySQL for example, or keep both.
 
 type DatabaseController interface {
-	AddUser(ctx context.Context, userData *models.UserData, geolocationData *models.GeolocationData) error
+	AddUser(ctx context.Context, userData *models.UserData, geolocation *models.Geolocation) error
 	GetUserByEmail(ctx context.Context, email string) (*models.UserData, error)
 	// The subject from the claims should have user ID
 	GetUserByID(ctx context.Context, id int) (*models.UserData, error)

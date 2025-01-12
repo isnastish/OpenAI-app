@@ -36,7 +36,7 @@ func NewClient() (*Client, error) {
 // Parse its response and retreive geolocation data based on provided
 // ip address.
 // Return an error, if any, otherwise an instance of `IpInfo` containing the necessary information.
-func (c *Client) GetGeolocationData(ipAddr string) (*models.GeolocationData, error) {
+func (c *Client) GetGeolocationData(ipAddr string) (*models.Geolocation, error) {
 	req, err := http.NewRequest("GET", fmt.Sprintf("https://api.ipflare.io/%s", ipAddr), nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a request: %s", err.Error())
@@ -56,16 +56,16 @@ func (c *Client) GetGeolocationData(ipAddr string) (*models.GeolocationData, err
 		return nil, fmt.Errorf("Failed to read response body: %s", err.Error())
 	}
 
-	var geolocationData models.GeolocationData
-	if err := json.Unmarshal(body, &geolocationData); err != nil {
+	var geolocation models.Geolocation
+	if err := json.Unmarshal(body, &geolocation); err != nil {
 		return nil, fmt.Errorf("Failed to unmarshal response data: %s", err.Error())
 	}
 
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("%s %s", geolocationData.ErrorCode, geolocationData.ErrorMsg)
+		return nil, fmt.Errorf("%s %s", geolocation.ErrorCode, geolocation.ErrorMsg)
 	}
 
-	log.Logger.Info("Got geolocation for IP: %s, city: %s, country: %s", ipAddr, geolocationData.City, geolocationData.Country)
+	log.Logger.Info("Got geolocation for IP: %s, city: %s, country: %s", ipAddr, geolocation.City, geolocation.Country)
 
-	return &geolocationData, nil
+	return &geolocation, nil
 }

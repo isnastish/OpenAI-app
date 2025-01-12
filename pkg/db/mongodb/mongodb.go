@@ -53,7 +53,7 @@ func NewMongodbController(ctx context.Context) (*MondgodbController, error) {
 	}, nil
 }
 
-func (db *MondgodbController) AddUser(ctx context.Context, userData *models.UserData, geolocationData *models.GeolocationData) error {
+func (db *MondgodbController) AddUser(ctx context.Context, userData *models.UserData, geolocation *models.Geolocation) error {
 	// NOTE: Omit the geolocation data for now.
 	// And, we have to check whether a user with a specified email address already exists.
 	// TODO: Hash password together with a salt before adding to a collection.

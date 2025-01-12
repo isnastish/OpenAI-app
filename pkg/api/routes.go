@@ -95,7 +95,7 @@ func (a *App) RefreshTokensRoute(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusUnauthorized, "unknown user")
 	}
 
-	tokenPair, err := a.auth.GetTokenPair(user.Email)
+	tokenPair, err := a.auth.GetTokens(user.Email)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}

@@ -54,7 +54,7 @@ func NewFirestoreController(ctx context.Context) (*FirestoreController, error) {
 	}, nil
 }
 
-func (db *FirestoreController) AddUser(ctx context.Context, userData *models.UserData, geolocationData *models.GeolocationData) error {
+func (db *FirestoreController) AddUser(ctx context.Context, userData *models.UserData, geolocationData *models.Geolocation) error {
 	// db.client.Collection("users").
 	return nil
 }
