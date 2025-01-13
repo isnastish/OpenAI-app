@@ -6,9 +6,6 @@ import (
 	"os"
 	"time"
 
-	// aws
-
-	// fiber
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 
@@ -17,6 +14,7 @@ import (
 	firebase "github.com/isnastish/openai/pkg/db/firestore"
 	"github.com/isnastish/openai/pkg/db/mongodb"
 	"github.com/isnastish/openai/pkg/db/postgres"
+	emailservice "github.com/isnastish/openai/pkg/email_service"
 	"github.com/isnastish/openai/pkg/ipresolver"
 	"github.com/isnastish/openai/pkg/log"
 	"github.com/isnastish/openai/pkg/openai"
@@ -30,19 +28,11 @@ type App struct {
 	dbController     db.DatabaseController
 	port             int
 
-	// experimental
+	// TODO: Work on naming the package and the service itself.
+	awsEmailService *emailservice.AWSEmailService
 }
 
 func NewApp(port int /* TODO: pass a secret */) (*App, error) {
-	////////////////////////////////////////////////////////////
-	// NOTE: AWS simple email service initialization.
-	// We can either set AWS_SDK_LOAD_CONFIG variable or specify the config manually.
-	// TODO: This all has to be moved into a separate package.
-	// awsSession, err := session.NewSession()
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to initialize AWS email service, %v", err)
-	// }
-
 	openaiClient, err := openai.NewClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create an OpenAI client, error: %v", err)
@@ -88,6 +78,11 @@ func NewApp(port int /* TODO: pass a secret */) (*App, error) {
 		return nil, fmt.Errorf("unknown backend")
 	}
 
+	awsEmailService, err := emailservice.NewAWSEmailService()
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize aws mailing service, %v", err)
+	}
+
 	accessTokenTTL := time.Minute * 15
 	app := &App{
 		fiberApp: fiber.New(fiber.Config{
@@ -100,7 +95,9 @@ func NewApp(port int /* TODO: pass a secret */) (*App, error) {
 		ipResolverClient: ipResolverClient,
 		auth:             auth.NewAuthManager([]byte("my-dummy-secret"), accessTokenTTL),
 		dbController:     dbController,
-		port:             port}
+		port:             port,
+		awsEmailService:  awsEmailService,
+	}
 
 	// CORS middleware
 	app.fiberApp.Use("/", SetupCORSMiddleware)

@@ -43,13 +43,6 @@ func (a *App) openaiController(ctx context.Context, requestBody []byte) (*models
 }
 
 func (a *App) loginController(ctx context.Context, requestBody []byte) (*models.Tokens, *auth.Cookie, error) {
-	// TODO: We should validate users data,
-	// an email address and user's password.
-	// In order to do that, we would have to retrieve a user from the database
-	// The only problem is that our database contains other data
-	// than UserData, its geolocation as well.
-	// If passwords don't match we return BadRequest, otherwise
-	// we proceed and update access and refresh tokens.
 	userData, err := unmarshalRequestData[models.UserData](requestBody)
 	if err != nil {
 		return nil, nil, err
@@ -98,6 +91,7 @@ func (a *App) signupController(ctx context.Context, requestBody []byte, ipAddr s
 	}
 
 	// TODO: Email validation.
+	// a.awsEmailService.SendEmail()
 
 	// Check if the user with given email address already exists.
 	existingUser, err := a.dbController.GetUserByEmail(ctx, userData.Email)
