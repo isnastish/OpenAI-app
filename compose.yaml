@@ -9,6 +9,7 @@ services:
       # TODO: We should find a more generalized way of specifying 
       # the path to credentials.
       - /home/alexey/.config/gcloud:/gcloud/:ro
+      - ~/.aws:~/.aws/
     build: 
       dockerfile: ./Dockerfile
     ports:
