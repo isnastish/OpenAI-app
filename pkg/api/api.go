@@ -6,6 +6,9 @@ import (
 	"os"
 	"time"
 
+	// aws
+
+	// fiber
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 
@@ -26,9 +29,20 @@ type App struct {
 	auth             *auth.AuthManager
 	dbController     db.DatabaseController
 	port             int
+
+	// experimental
 }
 
-func NewApp(port int /*TODO: pass a secret */) (*App, error) {
+func NewApp(port int /* TODO: pass a secret */) (*App, error) {
+	////////////////////////////////////////////////////////////
+	// NOTE: AWS simple email service initialization.
+	// We can either set AWS_SDK_LOAD_CONFIG variable or specify the config manually.
+	// TODO: This all has to be moved into a separate package.
+	// awsSession, err := session.NewSession()
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to initialize AWS email service, %v", err)
+	// }
+
 	openaiClient, err := openai.NewClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create an OpenAI client, error: %v", err)

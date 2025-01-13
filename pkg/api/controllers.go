@@ -97,6 +97,8 @@ func (a *App) signupController(ctx context.Context, requestBody []byte, ipAddr s
 		return err
 	}
 
+	// TODO: Email validation.
+
 	// Check if the user with given email address already exists.
 	existingUser, err := a.dbController.GetUserByEmail(ctx, userData.Email)
 	if err != nil {
