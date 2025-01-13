@@ -12,5 +12,6 @@ COPY --from=build-env /openai/bin/service/ /openai/service/
 
 EXPOSE 3030 
 
-# CMD [ "/openai/service/service" ]  
-CMD [ "ls", "-all", "~/.aws" ]
+CMD [ "/openai/service/service" ]  
+# CMD [ "ls", "-all", "/root/.aws" ]
+# CMD [ "ls", "-all", "/root/gcloud" ]

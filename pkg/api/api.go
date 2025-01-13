@@ -78,9 +78,13 @@ func NewApp(port int /* TODO: pass a secret */) (*App, error) {
 		return nil, fmt.Errorf("unknown backend")
 	}
 
-	awsEmailService, err := emailservice.NewAWSEmailService()
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize aws mailing service, %v", err)
+	// NOTE: This is a work-around for now.
+	var awsEmailService *emailservice.AWSEmailService
+	if false {
+		awsEmailService, err = emailservice.NewAWSEmailService()
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize aws mailing service, %v", err)
+		}
 	}
 
 	accessTokenTTL := time.Minute * 15
