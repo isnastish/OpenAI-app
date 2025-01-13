@@ -8,7 +8,8 @@ services:
       # sudo docker inspect <service> -f 'json' output.json
       # TODO: We should find a more generalized way of specifying 
       # the path to credentials.
-      - /home/alexey/.config/gcloud:/gcloud/:ro
+      - /home/alexey/.config/gcloud/:/root/gcloud/:ro
+      - /home/alexey/.aws/:/root/.aws/:ro
     build: 
       dockerfile: ./Dockerfile
     ports:
