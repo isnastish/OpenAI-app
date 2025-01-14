@@ -3,11 +3,8 @@ services:
     container_name: "openai"
     image: 'openai:latest'
     volumes:
-      # NOTE: ${HOME} is not expanded to the home directory on the host machine, 
       # NOTE: docker inspect <service_name> is used to display mounts  
       # sudo docker inspect <service> -f 'json' output.json
-      # TODO: We should find a more generalized way of specifying 
-      # the path to credentials.
       - /home/alexey/.config/gcloud/:/root/gcloud/:ro
       - /home/alexey/.aws/:/root/.aws/:ro
     build: 
