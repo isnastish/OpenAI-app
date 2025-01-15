@@ -1,5 +1,6 @@
 package models
 
+// TODO: Create mongodb data wrapper instead of specifying mongodb specific tags here.
 type UserData struct {
 	FirstName string `json:"first_name" bson:"first_name"`
 	LastName  string `json:"last_name" bson:"last_name"`
