@@ -46,8 +46,6 @@ func NewFirestoreController(ctx context.Context) (*FirestoreController, error) {
 		projectId = firestore.DetectProjectID
 	}
 
-	// NOTE: firestore documentation doesn't specify if we need to invoke
-	// close() method on the client instance.
 	databaseId, set := os.LookupEnv("FIRESTORE_DATABASE_ID")
 	if set { // the variable is set, but the value might be empty
 		client, err = firestore.NewClientWithDatabase(ctx, projectId, databaseId)
@@ -59,51 +57,9 @@ func NewFirestoreController(ctx context.Context) (*FirestoreController, error) {
 		return nil, fmt.Errorf("firesbase: failed to create client: %v", err)
 	}
 
-	db := &FirestoreController{
+	return &FirestoreController{
 		client: client,
-	}
-
-	// NOTE: Just for testing.
-	if err := db.AddUser(ctx, &models.UserData{
-		FirstName: "Alexey",
-		LastName:  "Yevtushenko",
-		Email:     "ayevtushenko@gmail.com",
-		Password:  "$2b$10$jpYIUC6UjAagw0p0Oh3EzeavyiwqlRsn4KnCYQ4upDTZe4JRLRYZq",
-	}, &models.Geolocation{
-		Country: "USA",
-		City:    "Washington",
-	}); err != nil {
-		return nil, err
-	}
-
-	// Iterate over all the
-	iter := db.client.Collection("users").Documents(ctx)
-	for {
-		doc, err := iter.Next()
-		if err == iterator.Done {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-
-		// TODO: Use DataTo interface
-		var wrappedUserData firestoreUserDataWrapper
-		if err := doc.DataTo(&wrappedUserData); err != nil {
-			return nil, err
-		}
-
-		log.Logger.Info("data: %v", wrappedUserData)
-	}
-
-	user, err := db.GetUserByEmail(ctx, "ayevtushenko@gmail.com")
-	if err != nil {
-		return nil, err
-	}
-
-	log.Logger.Info("user: %v", user)
-
-	return db, nil
+	}, nil
 }
 
 func (db *FirestoreController) AddUser(ctx context.Context, userData *models.UserData, geolocation *models.Geolocation) error {
