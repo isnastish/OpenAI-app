@@ -1,0 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;700&family=Lato:wght@400;700&display=swap');
+
+* {
+    box-sizing: border-box;
+}
+
+.login-presenter-class {
+    font-family: 'Lato', serif;
+    text-align: center;
+    font-weight: normal;
+    width: 30%;
+    max-width: 30rem;
+    margin: 1rem auto;
+    padding: 1rem;
+    background: linear-gradient(180deg, #454b0a, #1d4949);
+    border-radius: 8px;
+    box-shadow: 0 0 16px 1px rgba(0, 0, 0, 0.5);
+}
+
+.control label {
+    display: inline-block;
+    font-size: 0.8rem;
+    color: #9bafaf;
+    font-weight: bold;
+}
+
+.control input {
+    width: 100%;
+    max-width: 15rem;
+    padding: 0.5rem;
+    font-size: 1rem;
+    border-radius: 4px;
+    border: 1px solid #758a8a;
+    background-color: #869999;
+    color: #142020;
+}
+
+.errorText {
+    font-size: 12px;
+    color: red;
+}
