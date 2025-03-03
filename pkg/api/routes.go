@@ -115,6 +115,8 @@ func (a *App) RefreshTokensRoute(ctx *fiber.Ctx) error {
 }
 
 func (a *App) LoginRoute(ctx *fiber.Ctx) error {
+	// TODO: Parse the body here.
+
 	tokens, cookie, err := a.loginController(ctx.Context(), ctx.Body())
 	if err != nil {
 		// NOTE: Currently we don't have a way to distinguish between different error codes.
