@@ -3,7 +3,7 @@ package ports
 import (
 	"context"
 
-	"github.com/isnastish/openai/internal/domain/ipresolver"
+	"github.com/isnastish/aiclient/internal/domain/ipresolver"
 )
 
 type IpResolverRepository interface {

@@ -3,7 +3,7 @@ package ports
 import (
 	"context"
 
-	"github.com/isnastish/openai/internal/domain/ai"
+	"github.com/isnastish/aiclient/internal/domain/ai"
 )
 
 type AiRepository interface {

@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/isnastish/openai/internal/domain/ai"
+	"github.com/isnastish/aiclient/internal/domain/ai"
 )
 
 type OpenAiRepository struct {

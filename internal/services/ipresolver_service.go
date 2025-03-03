@@ -1,7 +1,10 @@
 package services
 
 import (
-	ports "github.com/isnastish/openai/internal/ports/outbound"
+	"context"
+
+	"github.com/isnastish/aiclient/internal/domain/ipresolver"
+	ports "github.com/isnastish/aiclient/internal/ports/outbound"
 )
 
 type IpResolverService struct {
@@ -12,4 +15,12 @@ func NewIpResolverService(ipResolverRepo ports.IpResolverRepository) *IpResolver
 	return &IpResolverService{
 		ipResolverRepo: ipResolverRepo,
 	}
+}
+
+func (i IpResolverService) GetUserGeolocation(ipAddress string) (*ipresolver.UserGeolocation, error) {
+	location, err := i.ipResolverRepo.GetUserGeolocationData(context.Background(), ipAddress)
+	if err != nil {
+		return nil, err
+	}
+	return location, nil
 }

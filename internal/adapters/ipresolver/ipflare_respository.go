@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/isnastish/openai/internal/domain/ipresolver"
+	"github.com/isnastish/aiclient/internal/domain/ipresolver"
 )
 
 // NOTE: This could be either in a subdirectory /adapters/ipresolver/
@@ -34,6 +34,11 @@ func NewIpflareRespository() *IpflareRepository {
 	}
 }
 
+type errorResponse struct {
+	ErrorCode string `json:"code,omitempty"`
+	ErrorMsg  string `json:"error,omitempty"`
+}
+
 type ipflareResponse struct {
 	Ip          string `json:"ip,omitempty"`
 	City        string `json:"city,omitempty"`
@@ -41,8 +46,8 @@ type ipflareResponse struct {
 	RegionCode  string `json:"region_code,omitempty"`
 	Country     string `json:"country_name,omitempty"`
 	CountryCode string `json:"country_code,omitempty"`
-	ErrorCode   string `json:"code,omitempty"`
-	ErrorMsg    string `json:"error,omitempty"`
+
+	errorResponse
 }
 
 const ipflareBaseURL = `https://api.ipflare.io/`
