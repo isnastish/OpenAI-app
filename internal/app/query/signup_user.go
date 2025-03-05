@@ -2,12 +2,10 @@ package query
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/isnastish/aiclient/internal/domain/users"
 	"github.com/isnastish/aiclient/internal/ports"
-	"golang.org/x/crypto/bcrypt"
 )
 
 // TODO: Figure out logging, either use a singleton
@@ -33,16 +31,8 @@ func (h SignupUserHandler) Handle(ctx context.Context, user *users.User) error {
 	if existingUser == nil {
 		return fmt.Errorf("user [%s] doesn't exist", user.Email)
 	}
-	user.IsValid(existingUser.Password)
-	if err := bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(user.Password)); err != nil {
-		switch {
-		case errors.Is(err, bcrypt.ErrMismatchedHashAndPassword):
-			// Unauthorized
-			return fmt.Errorf("password does match")
-		default:
-			// ServerInternalError
-			return fmt.Errorf("password validation failed, %v", err)
-		}
+	if err := user.IsValid(existingUser.Password); err != nil {
+		return err
 	}
 
 	// tokens, err := a.auth.GetTokens(userData.Email)
