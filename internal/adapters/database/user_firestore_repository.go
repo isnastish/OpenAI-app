@@ -40,3 +40,8 @@ func (f FirestoreUserRepository) InsertUser(ctx context.Context, userData *users
 	}
 	return nil
 }
+
+func (f FirestoreUserRepository) HasUser(ctx context.Context, email string) (bool, error) {
+	// TODO: Implement
+	return false, nil
+}

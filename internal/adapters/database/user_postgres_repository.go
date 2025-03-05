@@ -88,3 +88,11 @@ func (p PostgresUserRepository) InsertUser(ctx context.Context, userData *users.
 	}
 	return nil
 }
+
+func (p PostgresUserRepository) HasUser(ctx context.Context, email string) (bool, error) {
+	user, err := p.GetUserByEmail(ctx, email)
+	if err != nil {
+		return false, err
+	}
+	return (user == nil), nil
+}

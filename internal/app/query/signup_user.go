@@ -35,6 +35,10 @@ func (h SignupUserHandler) Handle(ctx context.Context, user *users.User) error {
 		return err
 	}
 
+	// NOTE: We shouldn't include the logic for handling cookies here,
+	// since it's not a business logic overall.
+	// Probaby all of that logic should be inside the http handler.
+
 	// tokens, err := a.auth.GetTokens(userData.Email)
 	// if err != nil {
 	// 	return nil, nil, err
