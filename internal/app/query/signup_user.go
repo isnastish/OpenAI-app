@@ -14,8 +14,8 @@ type SignupUserHandler struct {
 	userRepo ports.UserRepository
 }
 
-func NewSignupUserHandler(userRepo ports.UserRepository) *SignupUserHandler {
-	return &SignupUserHandler{
+func NewSignupUserHandler(userRepo ports.UserRepository) SignupUserHandler {
+	return SignupUserHandler{
 		userRepo: userRepo,
 	}
 }

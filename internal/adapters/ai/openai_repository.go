@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 
 	"github.com/isnastish/aiclient/internal/domain/ai"
 )
@@ -17,13 +16,8 @@ type OpenAiRepository struct {
 	apiKey     string
 }
 
-func NewOpenAiRepository( /* pass config which holds env variables */ ) *OpenAiRepository {
-	apiKey, set := os.LookupEnv("OPENAI_API_KEY")
-	if !set || apiKey == "" {
-		panic("OPENAI_API_KEY is not set")
-	}
-
-	return &OpenAiRepository{
+func NewOpenAiRepository(apiKey string) OpenAiRepository {
+	return OpenAiRepository{
 		apiKey:     apiKey,
 		httpClient: &http.Client{},
 	}

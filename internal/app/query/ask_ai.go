@@ -11,8 +11,8 @@ type AskAiHandler struct {
 	aiRepo ports.AiRepository
 }
 
-func NewAskAiHandler(aiRepo ports.AiRepository) *AskAiHandler {
-	return &AskAiHandler{
+func NewAskAiHandler(aiRepo ports.AiRepository) AskAiHandler {
+	return AskAiHandler{
 		aiRepo: aiRepo,
 	}
 }
