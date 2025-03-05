@@ -40,6 +40,7 @@ func NewAuthManager(secret []byte, accessTokenTTL time.Duration) *AuthManager {
 func (a *AuthManager) GetTokens(userEmail string) (*models.Tokens, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		&models.Claims{
+			// should be a unique idetifier for a user.
 			Email: userEmail,
 			RegisteredClaims: jwt.RegisteredClaims{
 				ExpiresAt: jwt.NewNumericDate(time.Now().Add(a.AccessTokenTTL)),
