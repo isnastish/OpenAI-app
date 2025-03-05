@@ -14,8 +14,8 @@ type CreateUserHandler struct {
 	ipResolverRepo ports.IpResolverRepository
 }
 
-func NewCreateUserHandler(userRepo ports.UserRepository, ipResolverRepo ports.IpResolverRepository) *CreateUserHandler {
-	return &CreateUserHandler{
+func NewCreateUserHandler(userRepo ports.UserRepository, ipResolverRepo ports.IpResolverRepository) CreateUserHandler {
+	return CreateUserHandler{
 		userRepo:       userRepo,
 		ipResolverRepo: ipResolverRepo,
 	}

@@ -22,13 +22,13 @@ type IpflareRepository struct {
 	apiKey     string
 }
 
-func NewIpflareRespository() *IpflareRepository {
+func NewIpflareRespository() IpflareRepository {
 	apiKey, set := os.LookupEnv("IPFLARE_API_KEY")
 	if !set || apiKey == "" {
 		panic("IPFLARE_API_KEY is not set")
 	}
 
-	return &IpflareRepository{
+	return IpflareRepository{
 		httpClient: &http.Client{},
 		apiKey:     apiKey,
 	}
