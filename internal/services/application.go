@@ -12,7 +12,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// TODO: Move config out of the application construction.
 type ApplicationEnv struct {
 	PostgresURL   string
 	OpenAIApiKey  string

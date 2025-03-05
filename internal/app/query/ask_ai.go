@@ -18,5 +18,9 @@ func NewAskAiHandler(aiRepo ports.AiRepository) AskAiHandler {
 }
 
 func (h AskAiHandler) Handle(ctx context.Context, question string) (*ai.AiQueryResult, error) {
-	return nil, nil
+	result, err := h.aiRepo.AskAi(ctx, question)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
