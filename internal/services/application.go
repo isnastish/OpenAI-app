@@ -5,7 +5,6 @@ import (
 )
 
 func NewApplication() *app.Application {
-
 	// ... c
 	// userPort := database.NewPostgresUserRepository()
 	// application := &Application{
