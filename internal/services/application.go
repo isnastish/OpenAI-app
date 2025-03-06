@@ -41,7 +41,7 @@ func NewApplication(ctx context.Context, env *ApplicationEnv) *app.Application {
 		},
 		Queries: app.Queries{
 			AskAi:      query.NewAskAiHandler(aiRepo),
-			SignupUser: query.NewSignupUserHandler(userRepo),
+			SignupUser: query.NewLoginUserHandler(userRepo),
 		},
 	}
 }

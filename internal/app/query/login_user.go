@@ -10,12 +10,12 @@ import (
 
 // TODO: Figure out logging, either use a singleton
 
-type SignupUserHandler struct {
+type LoginUserHandler struct {
 	userRepo ports.UserRepository
 }
 
-func NewSignupUserHandler(userRepo ports.UserRepository) SignupUserHandler {
-	return SignupUserHandler{
+func NewLoginUserHandler(userRepo ports.UserRepository) LoginUserHandler {
+	return LoginUserHandler{
 		userRepo: userRepo,
 	}
 }
@@ -23,7 +23,7 @@ func NewSignupUserHandler(userRepo ports.UserRepository) SignupUserHandler {
 // NOTE: This has to be rewritten, instead of accepting a user model,
 // what we have to do is to pass a command handler.
 // This should be a callback, otherwise it doesn't make any sense to have the same signature.
-func (h SignupUserHandler) Handle(ctx context.Context, user *users.User) error {
+func (h LoginUserHandler) Handle(ctx context.Context, user *users.User) error {
 	existingUser, err := h.userRepo.GetUserByEmail(ctx, user.Email)
 	if err != nil {
 		return err

@@ -16,7 +16,7 @@ type Commands struct {
 
 type Queries struct {
 	AskAi      query.AskAiHandler
-	SignupUser query.SignupUserHandler
+	SignupUser query.LoginUserHandler
 }
 
 // NOTE: If we put an Application ctor here, which would invole setting different repositories,
