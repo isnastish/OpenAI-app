@@ -44,7 +44,9 @@ func (p PostgresUserRepository) GetUserByEmail(ctx context.Context, email string
 	return &users[0], nil
 }
 
+//
 // NOTE: id should probably be UUID instead of int?
+//
 
 func (p PostgresUserRepository) GetUserByID(ctx context.Context, id int) (*users.User, error) {
 	conn, err := p.conn.Acquire(ctx)
