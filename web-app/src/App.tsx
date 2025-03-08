@@ -92,7 +92,7 @@ const LoginView: React.FC = () => {
     return (
         <div className="container">
             <div className="row justify-content-center mt-5">
-                <div className="col-md-5 font-monospace">
+                <div className="col-md-5">
                     <h3 className="text-center">
                         <p className="font-monospace">Login</p>
                     </h3>
@@ -110,6 +110,7 @@ const LoginView: React.FC = () => {
                             aria-describedby="addon-wrapping"
                         />
                     </div>
+                    <p className='fw-lighter text-danger'>{emailError}</p>
                     <div className="input-group mb-3">
                         <span className="input-group-text" id="addon-wrapping">
                             password
@@ -122,6 +123,7 @@ const LoginView: React.FC = () => {
                             aria-describedby="addon-wrapping" /* TODO: Figure out why do we need this.*/
                         />
                     </div>
+                    <p className='fw-lighter text-danger'>{passwordError}</p>
                     <div className="text-end">
                         <button
                             type="submit"
