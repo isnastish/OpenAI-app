@@ -2,20 +2,39 @@ import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router';
 
 const LoginView: React.FC = () => {
+    return (
+        <div className="container">
+            <div className="row justify-content-center mt-5">
+                <div className="col-md-5 font-monospace">
+                    <h3 className="text-center">
+                        <p className="font-monospace">Login</p>
+                    </h3>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const SignupView: React.FC = () => {
+    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [password2, setPassword2] = useState(''); // confirmation password
+
     const navigate = useNavigate();
 
-    const onSubmitLoginData = (): void => {
+    const onSubmitLoginData = async (): Promise<void> => {
         navigate('/ai');
     };
 
     return (
         <div className="container">
             <div className="row justify-content-center mt-5">
-                <div className="col-md-5">
+                <div className="col-md-5 font-monospace">
                     <h3 className="text-center">
-                        <p className="font-monospace">Login</p>
+                        <p className="font-monospace">Sign up</p>
                     </h3>
-                    <div className="input-group flex-nowrap">
+                    <div className="input-group mb-3">
                         <span className="input-group-text" id="addon-wrapping">
                             email
                         </span>
@@ -29,14 +48,61 @@ const LoginView: React.FC = () => {
                             aria-describedby="addon-wrapping"
                         />
                     </div>
-                    <hr></hr>
-                    <div className="col-12">
+                    <div className="input-group mb-3">
+                        <span className="input-group-text" id="addon-wrapping">
+                            name
+                        </span>
+                        <input
+                            type="text"
+                            required
+                            className="form-control"
+                            placeholder="Ivan Ivanov"
+                            aria-describedby="addon-wrapping"
+                        />
+                    </div>
+                    <div className="input-group mb-3">
+                        <span className="input-group-text" id="addon-wrapping">
+                            password
+                        </span>
+                        <input
+                            type="text"
+                            required
+                            placeholder="********"
+                            className="form-control"
+                            aria-describedby="addon-wrapping"
+                        />
+                    </div>
+                    <div className="input-group mb-3">
+                        <span className="input-group-text" id="addon-wrapping">
+                            confirm
+                        </span>
+                        <input
+                            type="text"
+                            required
+                            placeholder="********"
+                            className="form-control"
+                            aria-describedby="addon-wrapping"
+                        />
+                    </div>
+                    <div className="text-end">
                         <button
                             type="submit"
                             className="btn btn-outline-primary"
                             onClick={onSubmitLoginData}
                         >
-                            Sign in
+                            Sign up
+                        </button>
+                    </div>
+                    <hr></hr>
+                    <div className="d-flex justify-content-between">
+                        <span>Already have account?</span>
+                        <button
+                            className="btn btn-outline-danger"
+                            onClick={() => {
+                                navigate('/login');
+                            }}
+                        >
+                            Login
                         </button>
                     </div>
                 </div>
@@ -47,7 +113,7 @@ const LoginView: React.FC = () => {
 
 const AiView: React.FC = () => {
     const [aiQuestion, setAiQuestion] = useState<string>('');
-    const askAi = async () => {
+    const askAi = async (): Promise<void> => {
         throw new Error(aiQuestion);
     };
 
@@ -62,7 +128,7 @@ const AiView: React.FC = () => {
                         <textarea
                             className="form-control rounded-4"
                             id="floatingTextarea2"
-                            placeholder="Ask any question"
+                            placeholder="Type any question"
                             rows={5}
                             autoFocus={true}
                             onChange={(e) => setAiQuestion(e.target.value)}
@@ -85,9 +151,10 @@ function App() {
     return (
         <BrowserRouter>
             <Routes>
-                <Route path="/login" element={<LoginView />}></Route>
-                <Route path="/" element={<LoginView />}></Route>
-                <Route path="/ai" element={<AiView />}></Route>
+                <Route path="/signup" element={<SignupView />} />
+                <Route path="/" element={<SignupView />} />
+                <Route path="/ai" element={<AiView />} />
+                <Route path="/login" element={<LoginView />} />
             </Routes>
         </BrowserRouter>
     );
