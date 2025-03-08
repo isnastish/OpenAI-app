@@ -1,7 +1,57 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router';
 
+const ErrorView: React.FC = () => {
+    return (
+        <div className="container-fluid vh-100">
+            <div className="row justify-content-center align-items-center h-100">
+                <div className="col-md-4">
+                    <form>
+                        <div className="mb-3">
+                            <label htmlFor="email" className="form-label">
+                                Email address
+                            </label>
+                            <input
+                                type="email"
+                                className="form-control"
+                                id="email"
+                                placeholder="Enter your email"
+                            />
+                        </div>
+                        <div className="mb-3">
+                            <label htmlFor="password" className="form-label">
+                                Password
+                            </label>
+                            <input
+                                type="password"
+                                className="form-control"
+                                id="password"
+                                placeholder="Enter your password"
+                            />
+                        </div>
+                        <div className="mb-3">
+                            <button
+                                type="submit"
+                                className="btn btn-primary w-100"
+                            >
+                                Submit
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const LoginView: React.FC = () => {
+    const [email, setEmail] = useState('');
+
+    const navigate = useNavigate();
+    const onSubmittedLoginData = async () => {
+        navigate('/ai');
+    };
+
     return (
         <div className="container">
             <div className="row justify-content-center mt-5">
@@ -9,6 +59,41 @@ const LoginView: React.FC = () => {
                     <h3 className="text-center">
                         <p className="font-monospace">Login</p>
                     </h3>
+                    <div className="input-group mb-3">
+                        <span className="input-group-text" id="addon-wrapping">
+                            email
+                        </span>
+                        <input
+                            type="text"
+                            autoFocus={true}
+                            required
+                            className="form-control"
+                            placeholder="admin@gmail.com"
+                            aria-label="Username"
+                            aria-describedby="addon-wrapping"
+                        />
+                    </div>
+                    <div className="input-group mb-3">
+                        <span className="input-group-text" id="addon-wrapping">
+                            password
+                        </span>
+                        <input
+                            type="text"
+                            required
+                            className="form-control"
+                            placeholder="********"
+                            aria-describedby="addon-wrapping" /* TODO: Figure out why do we need this.*/
+                        />
+                    </div>
+                    <div className="text-end">
+                        <button
+                            type="submit"
+                            className="btn btn-outline-primary"
+                            onClick={onSubmittedLoginData}
+                        >
+                            Login
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
