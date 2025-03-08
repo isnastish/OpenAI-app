@@ -46,10 +46,29 @@ const ErrorView: React.FC = () => {
 
 const LoginView: React.FC = () => {
     const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
 
     const navigate = useNavigate();
     const onSubmittedLoginData = async () => {
-        navigate('/ai');
+        // NOTE: Assuming we have no errors.
+        // If one of fields is empty, display below the field.
+        try {
+            const resp = await fetch('/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email: email, password: password }),
+                credentials: 'include',
+            });
+
+            if (resp.status === 200) {
+                navigate('/ai');
+                return;
+            }
+        } catch (err) {
+            // TODO: Report an error
+        }
     };
 
     return (
