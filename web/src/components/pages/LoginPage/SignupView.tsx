@@ -1,8 +1,32 @@
-import React, { Fragment } from 'react';
+import React, { Fragment, FormEvent } from 'react';
 
-import SignUpData from '../../../models/SignUpData';
 import FormInput from '../../common/inputs/FormInput';
 import './LoginPresenter.css';
+
+interface SignUpData {
+    firstName: string;
+    setFirstName: (firstName: string) => void;
+
+    lastName: string;
+    setLastName: (lastName: string) => void;
+
+    email: string;
+    setEmail: (email: string) => void;
+
+    password: string;
+    setPassword: (password: string) => void;
+
+    confirmedPassword: string;
+    setConfirmedPassword: (password: string) => void;
+
+    handleSignUp: (event: FormEvent) => void;
+
+    clearAll: () => void;
+
+    accountExists: boolean;
+
+    setAccountExists: (accountExists: boolean) => void;
+}
 
 const SignUpView: React.FC<SignUpData> = ({
     firstName,
@@ -77,4 +101,4 @@ const SignUpView: React.FC<SignUpData> = ({
     );
 };
 
-export default SignUpView;
+export { SignUpView, SignUpData }; 

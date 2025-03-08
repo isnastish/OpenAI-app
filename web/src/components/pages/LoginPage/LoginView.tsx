@@ -1,7 +1,24 @@
-import React, { Fragment } from 'react';
+import React, { Fragment, FormEvent } from 'react';
 
-import LoginData from '../../../models/LoginData';
 import FormInput from '../../common/inputs/FormInput';
+
+interface LoginData {
+    email: string;
+    setEmail: (email: string) => void;
+    emailError: string;
+
+    password: string;
+    setPassword: (password: string) => void;
+    passwordError: string;
+
+    handleLogin: (event: FormEvent) => void;
+    authError: string;
+
+    accountExists: boolean;
+    setAccountExists: (accountExists: boolean) => void;
+
+    clearAll: () => void;
+};
 
 const LoginView: React.FC<LoginData> = ({
     email,
@@ -61,4 +78,4 @@ const LoginView: React.FC<LoginData> = ({
     );
 };
 
-export default LoginView;
+export { LoginView, LoginData }; 
