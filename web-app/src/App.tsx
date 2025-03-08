@@ -14,6 +14,7 @@ const ErrorView: React.FC = () => {
                             <input
                                 type="email"
                                 className="form-control"
+                                autoFocus={true}
                                 id="email"
                                 placeholder="Enter your email"
                             />
@@ -58,8 +59,7 @@ const LoginView: React.FC = () => {
             setEmailError('email cannot be empty');
             hasError = true;
         }
-
-        if (!password || (password.length < 8 && password.length > 128)) {
+        if (!password || password.length < 8 || password.length > 128) {
             setPasswordError(
                 'password length should be greater than 8 and less than 128'
             );
@@ -110,7 +110,7 @@ const LoginView: React.FC = () => {
                             aria-describedby="addon-wrapping"
                         />
                     </div>
-                    <p className='fw-lighter text-danger'>{emailError}</p>
+                    <p className="fw-lighter text-danger">{emailError}</p>
                     <div className="input-group mb-3">
                         <span className="input-group-text" id="addon-wrapping">
                             password
@@ -123,7 +123,7 @@ const LoginView: React.FC = () => {
                             aria-describedby="addon-wrapping" /* TODO: Figure out why do we need this.*/
                         />
                     </div>
-                    <p className='fw-lighter text-danger'>{passwordError}</p>
+                    <p className="fw-lighter text-danger">{passwordError}</p>
                     <div className="text-end">
                         <button
                             type="submit"
@@ -141,23 +141,48 @@ const LoginView: React.FC = () => {
 
 const SignupView: React.FC = () => {
     const [username, setUsername] = useState('');
+    const [usernameError, setUsernameError] = useState('');
     const [email, setEmail] = useState('');
+    const [emailError, setEmailError] = useState('');
     const [password, setPassword] = useState('');
+    const [passwordError, setPasswordError] = useState('');
     const [password2, setPassword2] = useState(''); // confirmation password
+    const [password2Error, setPassword2Error] = useState('');
 
     const navigate = useNavigate();
 
     const onSubmitLoginData = async (): Promise<void> => {
+        let hasError: boolean = false;
+
+        if (!username) {
+            setUsernameError('username cannot be empty');
+            hasError = true;
+        }
+        if (!email) {
+            setEmailError('email cannot be empty');
+            hasError = true;
+        }
+        if (!password || password.length < 8 || password.length > 128) {
+            setPasswordError('password should be in a range [8, 128)');
+            hasError = true;
+        }
+        if (password2 !== password) {
+            setPassword2Error(`passwords don't match`);
+            hasError = true;
+        }
+
+        if (hasError) {
+            return;
+        }
+
         navigate('/ai');
     };
 
     return (
         <div className="container">
             <div className="row justify-content-center mt-5">
-                <div className="col-md-5 font-monospace">
-                    <h3 className="text-center">
-                        <p className="font-monospace">Sign up</p>
-                    </h3>
+                <div className="col-md-5">
+                    <h3 className="text-center">Sign up</h3>
                     <div className="input-group mb-3">
                         <span className="input-group-text" id="addon-wrapping">
                             email
@@ -172,6 +197,7 @@ const SignupView: React.FC = () => {
                             aria-describedby="addon-wrapping"
                         />
                     </div>
+                    <p className="fw-lighter text-danger">{emailError}</p>
                     <div className="input-group mb-3">
                         <span className="input-group-text" id="addon-wrapping">
                             name
@@ -184,6 +210,7 @@ const SignupView: React.FC = () => {
                             aria-describedby="addon-wrapping"
                         />
                     </div>
+                    <p className="fw-lighter text-danger">{usernameError}</p>
                     <div className="input-group mb-3">
                         <span className="input-group-text" id="addon-wrapping">
                             password
@@ -196,6 +223,7 @@ const SignupView: React.FC = () => {
                             aria-describedby="addon-wrapping"
                         />
                     </div>
+                    <p className="fw-lighter text-danger">{passwordError}</p>
                     <div className="input-group mb-3">
                         <span className="input-group-text" id="addon-wrapping">
                             confirm
@@ -208,6 +236,7 @@ const SignupView: React.FC = () => {
                             aria-describedby="addon-wrapping"
                         />
                     </div>
+                    <p className="fw-lighter text-danger">{password2Error}</p>
                     <div className="text-end">
                         <button
                             type="submit"
@@ -236,9 +265,13 @@ const SignupView: React.FC = () => {
 };
 
 const AiView: React.FC = () => {
+    // TODO: Enabled Submit button once a user types something in.
+    // Otherwise the button should be disabled by default.
     const [aiQuestion, setAiQuestion] = useState<string>('');
     const askAi = async (): Promise<void> => {
-        throw new Error(aiQuestion);
+        if (!aiQuestion) {
+            return;
+        }
     };
 
     return (
@@ -258,13 +291,15 @@ const AiView: React.FC = () => {
                             onChange={(e) => setAiQuestion(e.target.value)}
                         ></textarea>
                     </div>
-                    <button
-                        type="button"
-                        className="btn btn-outline-primary btn-lg"
-                        onClick={askAi}
-                    >
-                        Submit
-                    </button>
+                    <div className="text-end">
+                        <button
+                            type="button"
+                            className="btn btn-outline-primary btn-lg"
+                            onClick={askAi}
+                        >
+                            Submit
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
