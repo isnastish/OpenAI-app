@@ -48,9 +48,11 @@ func addCorsMiddleware(router *chi.Mux) {
 
 //
 // TODO: Figure out how we can get a user from context.
+// And maybe move it to handlers.go
 //
 
 func (h HttpServer) CreateUser(w http.ResponseWriter, req *http.Request) {
+	// NOTE: This should be moved into a middleware since we do the same procedure in each handler.
 	var user users.User
 	decoder := json.NewDecoder(req.Body)
 	if err := decoder.Decode(&user); err != nil {
@@ -72,12 +74,18 @@ func (h HttpServer) CreateUser(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
+
+	// TODO: Implement authentication by handling cookies.
 }
 
 func (h HttpServer) LoginUser(w http.ResponseWriter, req *http.Response) {
 
 }
 
-func (h HttpServer) AskAiModel(w http.ResponseWriter, req *http.Response) {
+func (h HttpServer) AskAi(w http.ResponseWriter, req *http.Response) {
+
+}
+
+func (h HttpServer) RefreshToken(w http.ResponseWriter, req *http.Response) {
 
 }

@@ -9,7 +9,6 @@ interface SignUpData {
 
     email: string;
     setEmail: (email: string) => void;
-    // TODO: Speify email error as well.
 
     password: string;
     setPassword: (password: string) => void;
