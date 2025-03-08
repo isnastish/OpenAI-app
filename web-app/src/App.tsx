@@ -1,4 +1,4 @@
-import React, { FormEvent } from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router';
 
 const LoginView: React.FC = () => {
@@ -46,6 +46,11 @@ const LoginView: React.FC = () => {
 };
 
 const AiView: React.FC = () => {
+    const [aiQuestion, setAiQuestion] = useState<string>('');
+    const askAi = async () => {
+        throw new Error(aiQuestion);
+    };
+
     return (
         <div className="container">
             <div className="row justify-content-center mt-5">
@@ -60,8 +65,16 @@ const AiView: React.FC = () => {
                             placeholder="Ask any question"
                             rows={5}
                             autoFocus={true}
+                            onChange={(e) => setAiQuestion(e.target.value)}
                         ></textarea>
                     </div>
+                    <button
+                        type="button"
+                        className="btn btn-outline-primary btn-lg"
+                        onClick={askAi}
+                    >
+                        Submit
+                    </button>
                 </div>
             </div>
         </div>
