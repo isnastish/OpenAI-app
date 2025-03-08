@@ -46,12 +46,30 @@ const ErrorView: React.FC = () => {
 
 const LoginView: React.FC = () => {
     const [email, setEmail] = useState('');
+    const [emailError, setEmailError] = useState('');
     const [password, setPassword] = useState('');
+    const [passwordError, setPasswordError] = useState('');
 
     const navigate = useNavigate();
     const onSubmittedLoginData = async () => {
-        // NOTE: Assuming we have no errors.
-        // If one of fields is empty, display below the field.
+        let hasError: boolean = false;
+
+        if (!email) {
+            setEmailError('email cannot be empty');
+            hasError = true;
+        }
+
+        if (!password || (password.length < 8 && password.length > 128)) {
+            setPasswordError(
+                'password length should be greater than 8 and less than 128'
+            );
+            hasError = true;
+        }
+
+        if (hasError) {
+            return;
+        }
+
         try {
             const resp = await fetch('/api/login', {
                 method: 'POST',
