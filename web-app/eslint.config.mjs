@@ -18,4 +18,12 @@ export default [
           '@typescript-eslint/no-unused-vars': 'off',
       },
   },
+  // To suppress a warning that react version is not defined.
+  {
+    "settings": {
+      "react": {
+        "version": "detect"
+      }
+    }
+  }
 ];
