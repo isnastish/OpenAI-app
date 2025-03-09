@@ -1,5 +1,3 @@
-import log from './logger';
-
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router';
 
@@ -96,7 +94,6 @@ const LoginView: React.FC = () => {
 
             if (resp.status === 401 || resp.status === 500) {
                 const error = await resp.text();
-                setLoginError(error);
                 return;
             }
 
