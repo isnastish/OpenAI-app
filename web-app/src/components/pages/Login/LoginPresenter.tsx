@@ -5,4 +5,4 @@ const LoginPresenter: React.FC = () => {
     );
 }
 
-export default LoginPresenter;
+export default LoginPresenter

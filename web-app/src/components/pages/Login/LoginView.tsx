@@ -1,4 +1,5 @@
-import React, { Fragment, FormEvent } from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router';
 
 interface LoginData {
     email: string;
@@ -9,7 +10,7 @@ interface LoginData {
     passwordError: string;
     setPassword: (password: string) => void;
 
-    handleLogin: (event: FormEvent) => void;
+    // handleLogin: (event) => void;
     authError: string;
 
     accountExists: boolean;
@@ -18,61 +19,127 @@ interface LoginData {
     clearAll: () => void;
 }
 
-const LoginView: React.FC<LoginData> = ({
-    email,
-    setEmail,
-    emailError,
-    password,
-    setPassword,
-    passwordError,
-    handleLogin,
-    authError,
-    accountExists,
-    setAccountExists,
-    clearAll,
-}) => {
+const LoginView: React.FC = () => {
+    const [email, setEmail] = useState('');
+    const [emailError, setEmailError] = useState('');
+    const [password, setPassword] = useState('');
+    const [passwordError, setPasswordError] = useState('');
+
+    const [loginError, setLoginError] = useState('');
+
+    const navigate = useNavigate();
+    const onSubmittedLoginData = async () => {
+        let hasError: boolean = false;
+
+        if (!email) {
+            setEmailError('email cannot be empty');
+            hasError = true;
+        }
+        if (!password || password.length < 8 || password.length > 128) {
+            setPasswordError(
+                'password length should be greater than 8 and less than 128'
+            );
+            hasError = true;
+        }
+
+        if (hasError) {
+            return;
+        }
+
+        //
+        // TODO: Try using axios instead.
+        //
+
+        try {
+            const resp = await fetch('/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email: email, password: password }),
+                credentials: 'include',
+            });
+
+            if (resp.status === 200) {
+                navigate('/ai');
+                return;
+            }
+
+            if (resp.status === 401 || resp.status === 500) {
+                const error = await resp.text();
+                return;
+            }
+
+            throw new Error(`HTTP error, status ${resp.status}`);
+        } catch (err) {
+            // TODO: handle this code path properly
+            setLoginError('unhandled error');
+        }
+    };
+
     return (
-        // <div className="login-presenter-class">
-        //     <form id="login-form" onSubmit={(e) => handleLogin(e)}>
-        //         <h2>Login</h2>
-        //         <div className="my-class">
-        //             <FormInput
-        //                 isAutoFocus={true}
-        //                 labelText="Email"
-        //                 value={email}
-        //                 onChangeHandler={(e) => setEmail(e.target.value)}
-        //             />
-        //             <p className="errorText">{emailError}</p>
-        //             <FormInput
-        //                 labelText="Password"
-        //                 value={password}
-        //                 onChangeHandler={(e) => setPassword(e.target.value)}
-        //             />
-        //             <p className="errorText">{passwordError}</p>
-        //         </div>
-        //     </form>
-        //     <p>
-        //         <button
-        //             onClick={clearAll}
-        //             className="submit-button"
-        //             form="login-form"
-        //         >
-        //             Sign In
-        //         </button>
-        //     </p>
-        //     <p className="errorText">{authError}</p>
-        // </div>
-        // <div className="login-presenter-class">
-        //     <label>Don&#39;t have an account? </label>
-        //     <button
-        //         className="submit-button"
-        //         onClick={() => setAccountExists(!accountExists)}
-        //     >
-        //         Sing up
-        //     </button>
-        // </div>
-        <div></div>
+        <div className="container">
+            <div className="row justify-content-center mt-5">
+                <div className="col-md-5">
+                    <h3 className="text-center">
+                        <p className="font-monospace">Login</p>
+                    </h3>
+                    <div className="input-group mb-3">
+                        <span className="input-group-text" id="addon-wrapping">
+                            email
+                        </span>
+                        <input
+                            type="text"
+                            autoFocus={true}
+                            required
+                            className="form-control"
+                            placeholder="admin@gmail.com"
+                            aria-label="Username"
+                            aria-describedby="addon-wrapping"
+                            onChange={(e) => setEmail(e.target.value)}
+                        />
+                    </div>
+                    <p className="fw-lighter text-danger">{emailError}</p>
+                    <div className="input-group mb-3">
+                        <span className="input-group-text" id="addon-wrapping">
+                            password
+                        </span>
+                        <input
+                            type="text"
+                            required
+                            className="form-control"
+                            placeholder="********"
+                            aria-describedby="addon-wrapping" /* TODO: Figure out why do we need this.*/
+                            onChange={(e) => setPassword(e.target.value)}
+                        />
+                    </div>
+                    <p className="fw-lighter text-danger">{passwordError}</p>
+                    <div className="text-end">
+                        <button
+                            type="submit"
+                            className="btn btn-outline-primary"
+                            onClick={onSubmittedLoginData}
+                        >
+                            Login
+                        </button>
+                    </div>
+                    <hr />
+                    <div className="d-flex justify-content-between">
+                        <span>Don&apos;t have account?</span>
+                        <button
+                            className="btn btn-outline-danger"
+                            onClick={() => {
+                                navigate('/signup');
+                            }}
+                        >
+                            Sign up
+                        </button>
+                    </div>
+                    <p className="fw-lighter text-danger">{loginError}</p>
+                </div>
+            </div>
+        </div>
     );
 };
 
-export { LoginView, LoginData };
+export default LoginView;
