@@ -51,6 +51,8 @@ const LoginView: React.FC = () => {
     const [password, setPassword] = useState('');
     const [passwordError, setPasswordError] = useState('');
 
+    const [loginError, setLoginError] = useState('');
+
     const navigate = useNavigate();
     const onSubmittedLoginData = async () => {
         let hasError: boolean = false;
@@ -70,6 +72,10 @@ const LoginView: React.FC = () => {
             return;
         }
 
+        //
+        // TODO: Try using axios instead.
+        //
+
         try {
             const resp = await fetch('/api/login', {
                 method: 'POST',
@@ -84,8 +90,17 @@ const LoginView: React.FC = () => {
                 navigate('/ai');
                 return;
             }
+
+            if (resp.status === 401 || resp.status === 500) {
+                const error = await resp.text();
+                setLoginError(error);
+                return;
+            }
+
+            throw new Error(`HTTP error, status ${resp.status}`);
         } catch (err) {
-            // TODO: Report an error
+            // TODO: handle this code path properly
+            setLoginError('unhandled error');
         }
     };
 
@@ -108,6 +123,7 @@ const LoginView: React.FC = () => {
                             placeholder="admin@gmail.com"
                             aria-label="Username"
                             aria-describedby="addon-wrapping"
+                            onChange={(e) => setEmail(e.target.value)}
                         />
                     </div>
                     <p className="fw-lighter text-danger">{emailError}</p>
@@ -121,6 +137,7 @@ const LoginView: React.FC = () => {
                             className="form-control"
                             placeholder="********"
                             aria-describedby="addon-wrapping" /* TODO: Figure out why do we need this.*/
+                            onChange={(e) => setPassword(e.target.value)}
                         />
                     </div>
                     <p className="fw-lighter text-danger">{passwordError}</p>
@@ -133,18 +150,19 @@ const LoginView: React.FC = () => {
                             Login
                         </button>
                     </div>
-                    <hr/>
+                    <hr />
                     <div className="d-flex justify-content-between">
-                        <span>Don't have account?</span>
+                        <span>Don&apos;t have account?</span>
                         <button
                             className="btn btn-outline-danger"
                             onClick={() => {
                                 navigate('/signup');
                             }}
                         >
-                           Sign up 
+                            Sign up
                         </button>
                     </div>
+                    <p className="fw-lighter text-danger">{loginError}</p>
                 </div>
             </div>
         </div>
@@ -163,7 +181,7 @@ const SignupView: React.FC = () => {
 
     const navigate = useNavigate();
 
-    const onSubmitLoginData = async (): Promise<void> => {
+    const onSubmittedSignupData = async (): Promise<void> => {
         let hasError: boolean = false;
 
         if (!username) {
@@ -178,8 +196,8 @@ const SignupView: React.FC = () => {
             setPasswordError('password should be in a range [8, 128)');
             hasError = true;
         }
-        if (password2 !== password) {
-            setPassword2Error(`passwords don't match`);
+        if ((!password && !password2) || password2 !== password) {
+            setPassword2Error(`password doesn't match`);
             hasError = true;
         }
 
@@ -253,7 +271,7 @@ const SignupView: React.FC = () => {
                         <button
                             type="submit"
                             className="btn btn-outline-primary"
-                            onClick={onSubmitLoginData}
+                            onClick={onSubmittedSignupData}
                         >
                             Sign up
                         </button>
