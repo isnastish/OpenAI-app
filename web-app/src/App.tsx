@@ -3,7 +3,6 @@ import AiView from './components/pages/Ai/AiView';
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router';
 
-
 const ErrorView: React.FC = () => {
     return (
         <div className="container-fluid vh-100">
