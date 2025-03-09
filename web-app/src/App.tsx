@@ -133,6 +133,18 @@ const LoginView: React.FC = () => {
                             Login
                         </button>
                     </div>
+                    <hr/>
+                    <div className="d-flex justify-content-between">
+                        <span>Don't have account?</span>
+                        <button
+                            className="btn btn-outline-danger"
+                            onClick={() => {
+                                navigate('/signup');
+                            }}
+                        >
+                           Sign up 
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
