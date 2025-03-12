@@ -1,10 +1,29 @@
 import { useState } from "react";
 
+// 
+// TODO: Add Log out button (although not realy sure what's the purpose of it). 
+// 
+
 const AiView: React.FC = () => {
-    const [aiQuestion, setAiQuestion] = useState<string>('');
+    const [aiQuestion, setAiQuestion] = useState('');
+    const [aiInputError, setAiInputError] = useState('');
+
     const askAi = async (): Promise<void> => {
         if (!aiQuestion) {
+            setAiInputError('input cannot be empty')
             return;
+        }
+
+        try {
+            const resp = await fetch('/api/askai', {
+                method: "POST", 
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({airequest: aiQuestion}), 
+            })
+        } catch(err) {
+            // TODO: Handle this case.
         }
     };
 
@@ -25,6 +44,7 @@ const AiView: React.FC = () => {
                             onChange={(e) => setAiQuestion(e.target.value)}
                         ></textarea>
                     </div>
+                    <p className="fw-lighter text-danger">{aiInputError}</p> 
                     <div className="text-end">
                         <button
                             type="button"
