@@ -24,7 +24,6 @@ const LoginView: React.FC = () => {
     const [emailError, setEmailError] = useState('');
     const [password, setPassword] = useState('');
     const [passwordError, setPasswordError] = useState('');
-
     const [loginError, setLoginError] = useState('');
 
     const navigate = useNavigate();
