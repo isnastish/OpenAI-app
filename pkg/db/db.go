@@ -16,7 +16,11 @@ import (
 type DatabaseController interface {
 	AddUser(ctx context.Context, userData *models.UserData, geolocation *models.Geolocation) error
 	GetUserByEmail(ctx context.Context, email string) (*models.UserData, error)
-	// The subject from the claims should have user ID
 	GetUserByID(ctx context.Context, id int) (*models.UserData, error)
+	GetCompanyById()
+	AddNewCompnay()
+
+	// ...
+
 	Close(ctx context.Context) error
 }

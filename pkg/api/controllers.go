@@ -43,6 +43,7 @@ func (a *App) openaiController(ctx context.Context, requestBody []byte) (*models
 }
 
 func (a *App) loginController(ctx context.Context, requestBody []byte) (*models.Tokens, *auth.Cookie, error) {
+	// This shouldn't be here...
 	userData, err := unmarshalRequestData[models.UserData](requestBody)
 	if err != nil {
 		return nil, nil, err

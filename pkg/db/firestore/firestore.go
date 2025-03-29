@@ -83,8 +83,9 @@ func (db *FirestoreController) AddUser(ctx context.Context, userData *models.Use
 func (db *FirestoreController) GetUserByEmail(ctx context.Context, email string) (*models.UserData, error) {
 	var wrappedUserData firestoreUserDataWrapper
 
-	// TODO: Use WhereEntity instead.
-	iter := db.client.Collection("users").Where("email", "==", email).Documents(ctx)
+	usersRef := db.client.Collection("users")
+	iter := usersRef.Where("email", "==", email).Documents(ctx)
+
 	for {
 		doc, err := iter.Next()
 		if err == iterator.Done {
